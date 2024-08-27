@@ -25,19 +25,25 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
 
     # Define the JSON structure we expect
     json_structure = {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "subject": {"type": "string"},
-                "scheduled_for": {"type": "string", "format": "date-time"},
-                "content": {
+        "type": "object",
+        "properties": {
+            "emails": {
+                "type": "array",
+                "items": {
                     "type": "object",
-                    "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
+                    "properties": {
+                        "subject": {"type": "string"},
+                        "scheduled_for": {"type": "string", "format": "date-time"},
+                        "content": {
+                            "type": "object",
+                            "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
+                        }
+                    },
+                    "required": ["subject", "scheduled_for", "content"]
                 }
-            },
-            "required": ["subject", "scheduled_for", "content"]
-        }
+            }
+        },
+        "required": ["emails"]
     }
 
     try:
@@ -62,7 +68,7 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
         
         # Extract the function call result
         function_call = response.choices[0].message.function_call
-        emails_data = json.loads(function_call.arguments)
+        emails_data = json.loads(function_call.arguments)['emails']
         
         # Process and validate the generated data
         processed_emails = []
