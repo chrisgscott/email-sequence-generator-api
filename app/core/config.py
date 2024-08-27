@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     OPENAI_PRESENCE_PENALTY: float = 0.0
     SEQUENCE_LENGTH: int = 12
     EMAIL_FROM: str
+    EMAIL_FROM_NAME: str  # Add this line
     REDIS_URL: str = "redis://localhost:6379"
     EMAIL_SECTIONS: List[EmailSection] = [
         EmailSection(name="intro_content", description="A brief introduction", word_count="30-50"),

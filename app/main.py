@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import engine, Base
 from app.api.api_v1.api import router as api_router
+from celery import Celery
+from celery.schedules import crontab
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -12,5 +12,7 @@ class Email(Base):
     subject = Column(String)
     content = Column(JSONB)  # This will store the dynamic content sections
     scheduled_for = Column(DateTime)
+    sent = Column(Boolean, default=False)
+    sent_at = Column(DateTime, nullable=True)
 
     sequence = relationship("Sequence", back_populates="emails")
