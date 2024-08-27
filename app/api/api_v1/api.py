@@ -1,7 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from pydantic import EmailStr, ValidationError
+from pydantic import EmailStr, ValidationError, BaseModel
 
 from app.db.database import get_db
 from app.schemas import sequence as sequence_schema
@@ -31,8 +31,11 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
             raise ValueError("Missing required fields: topic and recipient_email")
 
         # Validate email
+        class EmailValidator(BaseModel):
+            email: EmailStr
+
         try:
-            EmailStr.validate(recipient_email)
+            EmailValidator(email=recipient_email)
         except ValidationError:
             raise ValueError(f"Invalid email address: {recipient_email}")
 

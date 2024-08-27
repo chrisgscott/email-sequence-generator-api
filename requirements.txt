@@ -18,4 +18,5 @@ fastapi==0.103.0
 uvicorn==0.23.0
 openai==0.27.0
 gunicorn==20.1.0
-pydantic[email]
+pydantic[email]==2.3.0
+email-validator==2.0.0.post2
