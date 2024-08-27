@@ -75,3 +75,6 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
+
+# Other
+project_roadmap.md

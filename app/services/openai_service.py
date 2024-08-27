@@ -2,8 +2,8 @@ import openai
 from app.core.config import settings
 from app.schemas.sequence import EmailContent as EmailBase
 from typing import List, Dict
-import json
 from datetime import datetime, timedelta
+import json
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -23,6 +23,23 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
 
     Return the result as a JSON array with {settings.SEQUENCE_LENGTH} items."""
 
+    # Define the JSON structure we expect
+    json_structure = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "subject": {"type": "string"},
+                "scheduled_for": {"type": "string", "format": "date-time"},
+                "content": {
+                    "type": "object",
+                    "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
+                }
+            },
+            "required": ["subject", "scheduled_for", "content"]
+        }
+    }
+
     try:
         response = openai.ChatCompletion.create(
             model=settings.OPENAI_MODEL,
@@ -30,6 +47,12 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
                 {"role": "system", "content": "You are a helpful assistant that generates content for email sequences."},
                 {"role": "user", "content": prompt}
             ],
+            functions=[{
+                "name": "generate_email_sequence",
+                "description": "Generate an email sequence based on the given topic and inputs",
+                "parameters": json_structure
+            }],
+            function_call={"name": "generate_email_sequence"},
             temperature=settings.OPENAI_TEMPERATURE,
             max_tokens=settings.OPENAI_MAX_TOKENS,
             top_p=settings.OPENAI_TOP_P,
@@ -37,7 +60,9 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
             presence_penalty=settings.OPENAI_PRESENCE_PENALTY,
         )
         
-        emails_data = json.loads(response.choices[0].message['content'])
+        # Extract the function call result
+        function_call = response.choices[0].message.function_call
+        emails_data = json.loads(function_call.arguments)
         
         # Process and validate the generated data
         processed_emails = []
