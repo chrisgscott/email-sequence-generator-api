@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 @router.post("/webhook")
 async def webhook(request: Request, db: Session = Depends(get_db)):
+    logger.info("Webhook endpoint hit")
     try:
         # Log the raw incoming data
         raw_data = await request.body()
@@ -51,10 +52,11 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
         # Schedule emails
         email_service.schedule_emails(db_sequence)
 
+        logger.info("Webhook processed successfully")
         return {"message": "Webhook received and processed successfully", "sequence_id": db_sequence.id}
     except ValueError as ve:
-        logger.error(f"Validation error: {str(ve)}")
+        logger.error(f"Validation error in webhook: {str(ve)}")
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
+        logger.error(f"Unexpected error in webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
