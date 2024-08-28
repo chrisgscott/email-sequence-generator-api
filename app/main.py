@@ -44,6 +44,7 @@ def locked_check_and_send_scheduled_emails():
         logger.info("Skipping email check as previous job is still running")
 
 scheduler.add_job(locked_check_and_send_scheduled_emails, CronTrigger(minute="*/15"))
+scheduler.add_job(check_and_schedule_emails, CronTrigger(hour="0", minute="0"))  # Run daily at midnight
 scheduler.start()
 
 app.add_event_handler("shutdown", scheduler.shutdown)

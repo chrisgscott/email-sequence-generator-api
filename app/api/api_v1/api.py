@@ -68,17 +68,32 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/sequences", response_model=SequenceResponse)
-def create_sequence(sequence: SequenceCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):
     try:
         emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs)
         db_sequence = sequence_service.create_sequence(db, sequence, emails)
         
-        for email in db_sequence.emails:
-            email_service.send_email_background(background_tasks, sequence.recipient_email, email, sequence.inputs)
+        schedule_next_batch_of_emails(db_sequence, days=30)
         
         return db_sequence
     except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+def schedule_next_batch_of_emails(sequence, days=30):
+    cutoff_date = datetime.now() + timedelta(days=days)
+    emails_to_schedule = [email for email in sequence.emails if email.scheduled_for <= cutoff_date and not email.sent_to_brevo]
+    
+    for email in emails_to_schedule:
+        try:
+            brevo_message_id = send_email_to_brevo(sequence.recipient_email, email, sequence.inputs)
+            email.sent_to_brevo = True
+            email.sent_to_brevo_at = datetime.now(timezone.utc)
+            email.brevo_message_id = brevo_message_id
+        except Exception as e:
+            logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")
+    
+    db.commit()
 
 @router.post("/test_email_scheduling")
 def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -104,3 +119,12 @@ def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depen
     except Exception as e:
         logger.error(f"Error in test_email_scheduling: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+def check_and_schedule_emails():
+    db = SessionLocal()
+    try:
+        sequences = db.query(Sequence).all()
+        for sequence in sequences:
+            schedule_next_batch_of_emails(sequence)
+    finally:
+        db.close()

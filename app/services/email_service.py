@@ -10,6 +10,7 @@ from sib_api_v3_sdk.rest import ApiException
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import func
 from datetime import date
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -81,3 +82,32 @@ def check_and_send_scheduled_emails():
 
 def send_email_background(background_tasks: BackgroundTasks, to_email: str, email_content: EmailContent, params: dict):
     background_tasks.add_task(send_email, to_email, email_content, params)
+
+def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = settings.BREVO_API_KEY
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+    
+    subject = email_content.subject
+    sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
+    to = [{"email": to_email}]
+    params = {
+        "subject": subject,
+        **email_content.content,
+        **inputs
+    }
+    
+    scheduled_at = int(email_content.scheduled_for.replace(tzinfo=pytz.UTC).timestamp())
+    
+    try:
+        api_response = api_instance.send_transac_email({
+            "templateId": settings.BREVO_EMAIL_TEMPLATE_ID,
+            "to": to,
+            "params": params,
+            "scheduledAt": scheduled_at
+        })
+        logger.info(f"Email scheduled with Brevo for {email_content.scheduled_for}. Message ID: {api_response.message_id}")
+        return api_response.message_id
+    except ApiException as e:
+        logger.error(f"Exception when calling SMTPApi->send_transac_email: {e}")
+        raise

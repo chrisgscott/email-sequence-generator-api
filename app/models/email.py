@@ -12,7 +12,8 @@ class Email(Base):
     subject = Column(String)
     content = Column(JSONB)  # This will store the dynamic content sections
     scheduled_for = Column(DateTime)
-    sent = Column(Boolean, default=False)
-    sent_at = Column(DateTime, nullable=True)
+    sent_to_brevo = Column(Boolean, default=False)
+    sent_to_brevo_at = Column(DateTime, nullable=True)
+    brevo_message_id = Column(String, nullable=True)
 
     sequence = relationship("Sequence", back_populates="emails")
