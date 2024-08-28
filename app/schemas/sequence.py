@@ -1,11 +1,15 @@
 from pydantic import BaseModel, EmailStr
 from typing import Dict, List
 from datetime import datetime
+from typing import Optional
 
 class EmailContent(BaseModel):
     subject: str
     scheduled_for: datetime
     content: Dict[str, str]
+    sent_to_brevo: bool = False
+    sent_to_brevo_at: Optional[datetime] = None
+    brevo_message_id: Optional[str] = None
 
 class SequenceBase(BaseModel):
     topic: str

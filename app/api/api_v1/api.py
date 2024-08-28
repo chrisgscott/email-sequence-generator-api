@@ -73,12 +73,21 @@ def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):
         emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs)
         db_sequence = sequence_service.create_sequence(db, sequence, emails)
         
-        schedule_next_batch_of_emails(db_sequence, days=30)
+        for email in db_sequence.emails:
+            try:
+                api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
+                email.sent_to_brevo = True
+                email.sent_to_brevo_at = datetime.now(timezone.utc)
+                email.brevo_message_id = api_response.message_id
+            except Exception as e:
+                logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")
         
+        db.commit()
         return db_sequence
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error creating sequence: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error creating sequence")
 
 def schedule_next_batch_of_emails(sequence, days=30):
     cutoff_date = datetime.now() + timedelta(days=days)
@@ -86,10 +95,10 @@ def schedule_next_batch_of_emails(sequence, days=30):
     
     for email in emails_to_schedule:
         try:
-            brevo_message_id = send_email_to_brevo(sequence.recipient_email, email, sequence.inputs)
+            api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
             email.sent_to_brevo = True
             email.sent_to_brevo_at = datetime.now(timezone.utc)
-            email.brevo_message_id = brevo_message_id
+            email.brevo_message_id = api_response.message_id
         except Exception as e:
             logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")
     

@@ -55,28 +55,29 @@ def check_and_send_scheduled_emails():
         
         emails_to_send = db.query(Email).filter(
             func.date(Email.scheduled_for) == current_date,
-            Email.sent == False
+            Email.sent_to_brevo == False
         ).all()
         
         logger.info(f"Found {len(emails_to_send)} emails to send")
         
         for email in emails_to_send:
             try:
-                # Check if the email has already been sent
-                if email.sent:
-                    logger.warning(f"Email {email.id} is marked as sent but was returned in the query")
+                if email.sent_to_brevo:
+                    logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
                     continue
                 
-                send_email(email.sequence.recipient_email, email, email.sequence.inputs)
+                api_response = send_email(email.sequence.recipient_email, email, email.sequence.inputs)
                 
-                # Update the email status immediately
-                email.sent = True
-                email.sent_at = datetime.now(timezone.utc)
+                email.sent_to_brevo = True
+                email.sent_to_brevo_at = datetime.now(timezone.utc)
+                email.brevo_message_id = api_response.message_id
                 db.commit()
                 logger.info(f"Scheduled email {email.id} sent successfully")
             except Exception as e:
                 logger.error(f"Error sending email {email.id}: {str(e)}")
                 db.rollback()
+    except Exception as e:
+        logger.error(f"Error in check_and_send_scheduled_emails: {str(e)}")
     finally:
         db.close()
 
