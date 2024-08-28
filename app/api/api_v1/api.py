@@ -7,6 +7,7 @@ from app.schemas import sequence as sequence_schema
 from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailContent  # Add EmailContent here
 from app.services import openai_service, email_service, sequence_service
 from datetime import datetime, timedelta
+from app.services.email_service import send_email
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -82,35 +83,24 @@ def create_sequence(sequence: SequenceCreate, background_tasks: BackgroundTasks,
 @router.post("/test_email_scheduling")
 def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
-        # Create a test sequence
-        test_sequence = SequenceCreate(
-            topic="Test Email Scheduling",
-            inputs={},
-            recipient_email="chrisgscott@gmail.com"  # Replace with your test email
+        # Create a test email
+        current_time = datetime.utcnow()
+        test_email = EmailContent(
+            subject="Test Email Scheduling",
+            content={
+                "intro_content": "This is a test email for scheduling",
+                "week_task": "Test the email scheduling system",
+                "quick_tip": "Always test your code",
+                "cta": "Check if this email arrives on time"
+            },
+            scheduled_for=current_time + timedelta(minutes=1)
         )
         
-        # Generate test emails for the next few minutes
-        current_time = datetime.utcnow()
-        test_emails = [
-            EmailContent(
-                subject=f"Test Email {i+1}",
-                content={
-                    "intro_content": f"This is test email {i+1}",
-                    "week_task": "Test task",
-                    "quick_tip": "Test tip",
-                    "cta": "Test CTA"
-                },
-                scheduled_for=current_time + timedelta(minutes=i+1)
-            )
-            for i in range(3)  # Create 3 test emails
-        ]
+        # Send the email immediately to test the new send_email function
+        recipient_email = "chrisgscott@gmail.com"  # Replace with your test email
+        send_email(recipient_email, test_email, {"param1": "test_value"})
         
-        # Create the sequence in the database
-        db_sequence = sequence_service.create_sequence(db, test_sequence, test_emails)
-        
-        # No need to manually schedule emails here, as they're already in the database
-        # The check_and_send_scheduled_emails function will handle sending them
-        
-        return {"message": "Test sequence created and emails scheduled", "sequence_id": db_sequence.id}
+        return {"message": "Test email sent successfully"}
     except Exception as e:
+        logger.error(f"Error in test_email_scheduling: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

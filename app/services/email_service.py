@@ -5,11 +5,17 @@ from fastapi import BackgroundTasks
 from app.db.database import SessionLocal
 from app.models.email import Email
 from datetime import datetime, timezone
+import logging
+from sib_api_v3_sdk.rest import ApiException
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+logger = logging.getLogger(__name__)
 
 # Configure API key authorization
 configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = settings.BREVO_API_KEY
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def send_email(to_email: str, email_content: EmailContent, params: dict):
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
 
@@ -18,7 +24,7 @@ def send_email(to_email: str, email_content: EmailContent, params: dict):
         **email_content.content,
         **params
     }
-    print("Params being sent to Brevo:", params_to_send)
+    logger.info(f"Params being sent to Brevo: {params_to_send}")
 
     send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
         to=[{"email": to_email}],
@@ -29,10 +35,13 @@ def send_email(to_email: str, email_content: EmailContent, params: dict):
 
     try:
         api_response = api_instance.send_transac_email(send_smtp_email)
-        print(f"Email sent successfully. Message ID: {api_response.message_id}")
+        logger.info(f"Email sent successfully to {to_email}. Message ID: {api_response.message_id}")
         return api_response
-    except sib_api_v3_sdk.ApiException as e:
-        print(f"Exception when calling SMTPApi->send_transac_email: {e}")
+    except ApiException as e:
+        logger.error(f"Exception when calling SMTPApi->send_transac_email: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error when sending email: {e}")
         raise
 
 def check_and_send_scheduled_emails():
@@ -50,8 +59,9 @@ def check_and_send_scheduled_emails():
                 email.sent = True
                 email.sent_at = current_time
                 db.commit()
+                logger.info(f"Scheduled email {email.id} sent successfully")
             except Exception as e:
-                print(f"Error sending email {email.id}: {str(e)}")
+                logger.error(f"Error sending email {email.id}: {str(e)}")
                 db.rollback()
     finally:
         db.close()
