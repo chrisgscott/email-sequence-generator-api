@@ -1,6 +1,9 @@
 from logging.config import fileConfig
 import sys
 from pathlib import Path
+from sqlalchemy import engine_from_config, pool
+from dotenv import load_dotenv
+import os
 
 # Add the project root directory to the Python path
 project_root = Path(__file__).parents[1]
@@ -29,9 +32,13 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+import logging
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
-    url = settings.DATABASE_URL
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -44,11 +51,15 @@ def run_migrations_offline() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    from sqlalchemy import create_engine
+    configuration = config.get_section(config.config_ini_section)
+    configuration['sqlalchemy.url'] = settings.DATABASE_URL
+    connectable = engine_from_config(
+        configuration,
+        prefix='sqlalchemy.',
+        poolclass=pool.NullPool,
+    )
 
-    engine = create_engine(settings.DATABASE_URL)
-
-    with engine.connect() as connection:
+    with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata
