@@ -4,8 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import engine, Base
 from app.api.api_v1.api import router as api_router
-from celery import Celery
-from celery.schedules import crontab
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from app.services.email_service import check_and_send_scheduled_emails
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -28,6 +29,12 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Email Sequence Generator API"}
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(check_and_send_scheduled_emails, CronTrigger(minute="*/15"))
+scheduler.start()
+
+app.add_event_handler("shutdown", scheduler.shutdown)
 
 if __name__ == "__main__":
     import uvicorn

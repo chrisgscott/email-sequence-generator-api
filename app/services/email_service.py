@@ -1,16 +1,14 @@
-from app.models.sequence import Sequence
 from app.core.config import settings
 import sib_api_v3_sdk
 from app.schemas.sequence import EmailContent
+from fastapi import BackgroundTasks
+from app.db.database import SessionLocal
+from app.models.email import Email
+from datetime import datetime, timezone
 
 # Configure API key authorization
 configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = settings.BREVO_API_KEY
-
-def schedule_emails(sequence: Sequence):
-    # This function now just ensures the emails are in the database
-    # The actual sending will be handled by the Celery task
-    pass
 
 def send_email(to_email: str, email_content: EmailContent, params: dict):
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
@@ -36,3 +34,27 @@ def send_email(to_email: str, email_content: EmailContent, params: dict):
     except sib_api_v3_sdk.ApiException as e:
         print(f"Exception when calling SMTPApi->send_transac_email: {e}")
         raise
+
+def check_and_send_scheduled_emails():
+    db = SessionLocal()
+    try:
+        current_time = datetime.now(timezone.utc)
+        emails_to_send = db.query(Email).filter(
+            Email.scheduled_for <= current_time,
+            Email.sent == False
+        ).all()
+        
+        for email in emails_to_send:
+            try:
+                send_email(email.sequence.recipient_email, email, email.sequence.inputs)
+                email.sent = True
+                email.sent_at = current_time
+                db.commit()
+            except Exception as e:
+                print(f"Error sending email {email.id}: {str(e)}")
+                db.rollback()
+    finally:
+        db.close()
+
+def send_email_background(background_tasks: BackgroundTasks, to_email: str, email_content: EmailContent, params: dict):
+    background_tasks.add_task(send_email, to_email, email_content, params)

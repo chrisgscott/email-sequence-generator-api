@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import EmailStr, ValidationError, BaseModel
 
@@ -11,7 +11,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.post("/webhook")
-async def webhook(request: Request, db: Session = Depends(get_db)):
+async def webhook(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     logger.info("Webhook endpoint hit")
     try:
         # Log the raw incoming data
@@ -52,8 +52,9 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
         # Create new sequence in database
         db_sequence = sequence_service.create_sequence(db, sequence, emails)
 
-        # Schedule emails
-        email_service.schedule_emails(db_sequence)
+        # Schedule emails using background tasks
+        for email in db_sequence.emails:
+            email_service.send_email_background(background_tasks, sequence.recipient_email, email, sequence.inputs)
 
         logger.info("Webhook processed successfully")
         return {"message": "Webhook received and processed successfully", "sequence_id": db_sequence.id}
@@ -63,3 +64,16 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+@router.post("/sequences", response_model=SequenceResponse)
+def create_sequence(sequence: SequenceCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    try:
+        emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs)
+        db_sequence = sequence_service.create_sequence(db, sequence, emails)
+        
+        for email in db_sequence.emails:
+            email_service.send_email_background(background_tasks, sequence.recipient_email, email, sequence.inputs)
+        
+        return db_sequence
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

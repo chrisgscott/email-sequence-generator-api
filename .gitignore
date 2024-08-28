@@ -55,13 +55,6 @@ Thumbs.db
 *.db
 *.sqlite3
 
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# Redis
-dump.rdb
-
 # Pytest
 .pytest_cache/
 
