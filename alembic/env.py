@@ -36,6 +36,11 @@ import logging
 logging.basicConfig()
 logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
+load_dotenv()  # This loads the variables from .env file, if it exists
+
+# Use the DATABASE_URL from environment variable
+config.set_main_option('sqlalchemy.url', os.getenv('DATABASE_URL'))
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = config.get_main_option("sqlalchemy.url")
