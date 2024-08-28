@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import List
+import os
 
 class EmailSection(BaseSettings):
     name: str
@@ -33,4 +34,14 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        print(f"Loaded REDIS_URL: {self.REDIS_URL}")
+        print(f"Environment REDIS_URL: {os.environ.get('REDIS_URL', 'Not set')}")
+
 settings = Settings()
+
+print("All settings loaded:")
+for key, value in settings.dict().items():
+    if key not in ['EMAIL_SECTIONS', 'OPENAI_API_KEY', 'BREVO_API_KEY']:  # Exclude sensitive or large data
+        print(f"{key}: {value}")
