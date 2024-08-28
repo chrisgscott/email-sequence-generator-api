@@ -23,3 +23,15 @@ class Sequence(SequenceBase):
 
     class Config:
         from_attributes = True
+
+class SequenceResponse(BaseModel):
+    id: int
+    topic: str
+    inputs: Dict[str, str]
+    recipient_email: str
+    emails: List[EmailContent]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
