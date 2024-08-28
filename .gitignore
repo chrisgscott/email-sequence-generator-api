@@ -70,4 +70,5 @@ coverage.xml
 .hypothesis/
 
 # Other
-project_roadmap.mdalembic.ini
+project_roadmap.md
+alembic.ini
