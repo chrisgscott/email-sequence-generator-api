@@ -1,6 +1,6 @@
+import os
 from pydantic_settings import BaseSettings
 from typing import List
-import os
 
 class EmailSection(BaseSettings):
     name: str
@@ -10,6 +10,7 @@ class EmailSection(BaseSettings):
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Email Sequence Generator API"
     PROJECT_VERSION: str = "1.0.0"
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
     OPENAI_API_KEY: str
     DATABASE_URL: str
     BREVO_API_KEY: str
