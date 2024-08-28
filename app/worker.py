@@ -1,8 +1,10 @@
 from celery import Celery
 from app.core.config import settings
 from celery.schedules import crontab
+import os
 
-print(f"REDIS_URL: {settings.REDIS_URL}")
+print(f"REDIS_URL from settings: {settings.REDIS_URL}")
+print(f"REDIS_URL from environment: {os.getenv('REDIS_URL')}")
 
 celery_app = Celery('email_sequence_generator',
                     broker=settings.REDIS_URL,

@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     SEQUENCE_LENGTH: int = 12
     EMAIL_FROM: str
     EMAIL_FROM_NAME: str  # Add this line
-    REDIS_URL: str = "redis://localhost:6379"
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
     EMAIL_SECTIONS: List[EmailSection] = [
         EmailSection(name="intro_content", description="A brief introduction", word_count="30-50"),
         EmailSection(name="week_task", description="The main task or focus for the week", word_count="50-100"),
