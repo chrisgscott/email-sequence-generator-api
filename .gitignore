@@ -50,6 +50,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+alembic/env.py
 
 # Project specific
 *.db
