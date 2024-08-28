@@ -29,6 +29,7 @@ class Settings(BaseSettings):
         EmailSection(name="quick_tip", description="A short, actionable tip related to the week's task", word_count="20-30"),
         EmailSection(name="cta", description="A call-to-action encouraging further engagement", word_count="20-30")
     ]
+    SEQUENCE_FREQUENCY_DAYS: int = 30  # Default to monthly
 
     class Config:
         env_file = ".env"

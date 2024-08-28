@@ -19,7 +19,6 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
 
     Also provide:
     {len(settings.EMAIL_SECTIONS) + 1}. subject: A compelling subject line for the email
-    {len(settings.EMAIL_SECTIONS) + 2}. scheduled_for: The scheduled send date (in ISO format)
 
     Return the result as a JSON array with {settings.SEQUENCE_LENGTH} items."""
 
@@ -33,13 +32,12 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
                     "type": "object",
                     "properties": {
                         "subject": {"type": "string"},
-                        "scheduled_for": {"type": "string", "format": "date-time"},
                         "content": {
                             "type": "object",
                             "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
                         }
                     },
-                    "required": ["subject", "scheduled_for", "content"]
+                    "required": ["subject", "content"]
                 }
             }
         },
@@ -73,26 +71,21 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
         # Process and validate the generated data
         processed_emails = []
         current_date = datetime.now()
-        for email in emails_data:
+        for i, email in enumerate(emails_data):
             # Ensure all required sections are present
             for section in settings.EMAIL_SECTIONS:
                 if section.name not in email['content']:
                     email['content'][section.name] = f"Content for {section.name} was not generated."
             
-            # Parse and validate the scheduled_for date
-            try:
-                scheduled_for = datetime.fromisoformat(email['scheduled_for'])
-            except ValueError:
-                # If parsing fails, schedule the email for the next day
-                current_date += timedelta(days=1)
-                scheduled_for = current_date
+            # Calculate the scheduled_for date based on the sequence frequency
+            scheduled_for = current_date + timedelta(days=i * settings.SEQUENCE_FREQUENCY_DAYS)
             
             processed_emails.append(EmailBase(
                 subject=email['subject'],
                 content=email['content'],
                 scheduled_for=scheduled_for
             ))
-        
+
         return processed_emails
     except Exception as e:
         raise Exception(f"Error generating email sequence: {str(e)}")
