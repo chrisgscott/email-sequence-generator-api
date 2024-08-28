@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 import logging
 from sib_api_v3_sdk.rest import ApiException
 from tenacity import retry, stop_after_attempt, wait_exponential
+from sqlalchemy import func
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -47,17 +49,28 @@ def send_email(to_email: str, email_content: EmailContent, params: dict):
 def check_and_send_scheduled_emails():
     db = SessionLocal()
     try:
-        current_time = datetime.now(timezone.utc)
+        current_date = date.today()
+        logger.info(f"Checking for emails scheduled for {current_date}")
+        
         emails_to_send = db.query(Email).filter(
-            Email.scheduled_for <= current_time,
+            func.date(Email.scheduled_for) == current_date,
             Email.sent == False
         ).all()
         
+        logger.info(f"Found {len(emails_to_send)} emails to send")
+        
         for email in emails_to_send:
             try:
+                # Check if the email has already been sent
+                if email.sent:
+                    logger.warning(f"Email {email.id} is marked as sent but was returned in the query")
+                    continue
+                
                 send_email(email.sequence.recipient_email, email, email.sequence.inputs)
+                
+                # Update the email status immediately
                 email.sent = True
-                email.sent_at = current_time
+                email.sent_at = datetime.now(timezone.utc)
                 db.commit()
                 logger.info(f"Scheduled email {email.id} sent successfully")
             except Exception as e:
