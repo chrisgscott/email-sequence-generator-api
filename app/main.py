@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.db.database import engine, Base
-from app.api.api_v1.api import router as api_router
+from app.api.api_v1.api import router as api_router, check_and_schedule_emails
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.services.email_service import check_and_send_scheduled_emails
@@ -11,6 +11,8 @@ from threading import Lock
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
 
