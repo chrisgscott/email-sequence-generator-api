@@ -1,10 +1,7 @@
 import os
 from celery import Celery
-from celery.schedules import crontab
 from app.core.config import settings
-
-print(f"REDIS_URL from settings: {settings.REDIS_URL}")
-print(f"REDIS_URL from environment: {os.getenv('REDIS_URL')}")
+from celery.schedules import crontab
 
 try:
     celery_app = Celery('email_sequence_generator',
@@ -15,7 +12,14 @@ try:
         'app.tasks.*': {'queue': 'email_tasks'}
     }
 
-    # Add more configuration and task definitions here
+    celery_app.conf.update(task_track_started=True)
+
+    celery_app.conf.beat_schedule = {
+        'send-scheduled-emails': {
+            'task': 'app.tasks.send_scheduled_emails',
+            'schedule': crontab(minute='*/15'),  # Run every 15 minutes
+        },
+    }
 
 except Exception as e:
     print(f"Error initializing Celery app: {str(e)}")
