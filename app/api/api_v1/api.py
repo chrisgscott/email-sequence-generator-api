@@ -66,10 +66,13 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
+    logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
     db = SessionLocal()
     try:
         emails = []
+        total_batches = settings.SEQUENCE_LENGTH // settings.BATCH_SIZE
         for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
+            logger.info(f"Generating batch {batch // settings.BATCH_SIZE + 1} of {total_batches} for sequence_id: {sequence_id}")
             batch_emails = openai_service.generate_email_sequence(
                 sequence.topic, 
                 sequence.inputs, 
@@ -77,18 +80,19 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                 batch_size=settings.BATCH_SIZE
             )
             emails.extend(batch_emails)
-            # Update sequence progress in the database
+            logger.info(f"Generated {len(batch_emails)} emails for batch {batch // settings.BATCH_SIZE + 1}")
             sequence_service.update_sequence_progress(db, sequence_id, len(emails))
+            logger.info(f"Updated sequence progress: {len(emails)}/{settings.SEQUENCE_LENGTH} emails")
 
+        logger.info(f"Email generation complete for sequence_id: {sequence_id}. Finalizing sequence.")
         sequence_service.finalize_sequence(db, sequence_id, emails)
-        # Schedule emails
-        for email in emails:
-            email_service.send_email_background(db, sequence.recipient_email, email, sequence.inputs)
+        logger.info(f"Sequence finalized for sequence_id: {sequence_id}")
+        
         db.commit()
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Error generating email sequence: {str(e)}")
+    except AppException as e:
+        logger.error(f"Error generating email sequence for sequence_id: {sequence_id}: {str(e)}")
         sequence_service.mark_sequence_failed(db, sequence_id, str(e))
+        db.commit()
     finally:
         db.close()
 

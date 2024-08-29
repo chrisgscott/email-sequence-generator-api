@@ -1,19 +1,19 @@
-from app.core.config import settings
+from app.core.config import settings, TIMEZONE
 import sib_api_v3_sdk
 from app.schemas.sequence import EmailContent
 from fastapi import BackgroundTasks
 from app.db.database import SessionLocal
 from app.models.email import Email
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 import logging
 from sib_api_v3_sdk.rest import ApiException
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import func
 from datetime import date
 import pytz
-from datetime import timedelta
 from app.models.sequence import Sequence
 from sqlalchemy.orm import Session
+from app.core.exceptions import AppException
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,10 @@ def send_email(to_email: str, email_content: EmailContent, inputs: dict):
         **inputs
     }
     
-    current_time = datetime.now(timezone.utc)
+    current_time = datetime.now(TIMEZONE)
     max_schedule_time = current_time + timedelta(days=3)
     scheduled_at = min(max(email_content.scheduled_for, current_time + timedelta(minutes=5)), max_schedule_time)
-    scheduled_at_str = scheduled_at.astimezone(pytz.UTC).isoformat()
+    scheduled_at_str = scheduled_at.isoformat()  # It's already in UTC, so we don't need to convert
     
     try:
         api_response = api_instance.send_transac_email({
@@ -76,7 +76,7 @@ def check_and_send_scheduled_emails():
                 api_response = send_email(email.sequence.recipient_email, email, email.sequence.inputs)
                 
                 email.sent_to_brevo = True
-                email.sent_to_brevo_at = datetime.now(timezone.utc)
+                email.sent_to_brevo_at = datetime.now(TIMEZONE)
                 email.brevo_message_id = api_response.message_id
                 db.commit()
                 logger.info(f"Scheduled email {email.id} sent successfully")
@@ -131,7 +131,7 @@ def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict
 def check_and_schedule_emails():
     db = SessionLocal()
     try:
-        current_date = datetime.now(timezone.utc)
+        current_date = datetime.now(TIMEZONE)
         next_3_days = current_date + timedelta(days=3)
         
         sequences = db.query(Sequence).filter(
@@ -144,17 +144,19 @@ def check_and_schedule_emails():
             
             for email in emails_to_schedule:
                 try:
-                    api_response = send_email(sequence.recipient_email, email, sequence.inputs)
-                    email.sent_to_brevo = True
-                    email.sent_to_brevo_at = current_date
-                    email.brevo_message_id = api_response.message_id
-                    db.commit()
-                    logger.info(f"Scheduled email {email.id} for sequence {sequence.id}")
+                    if not email.sent_to_brevo:
+                        api_response = send_email(sequence.recipient_email, email, sequence.inputs)
+                        email.sent_to_brevo = True
+                        email.sent_to_brevo_at = current_date
+                        email.brevo_message_id = api_response.message_id
+                        db.commit()
+                        logger.info(f"Scheduled email {email.id} for sequence {sequence.id}")
+                    else:
+                        logger.warning(f"Email {email.id} for sequence {sequence.id} already sent to Brevo")
                 except Exception as e:
                     logger.error(f"Error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
                     db.rollback()
             
-            # Update next_email_date to the earliest unsent email, even if it's beyond 3 days
             sequence.next_email_date = min((email.scheduled_for for email in sequence.emails if not email.sent_to_brevo), default=None)
             db.commit()
         

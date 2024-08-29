@@ -1,6 +1,7 @@
 import os
 from pydantic_settings import BaseSettings
 from typing import List
+from datetime import timezone
 
 class EmailSection(BaseSettings):
     name: str
@@ -41,3 +42,5 @@ print("All settings loaded:")
 for key, value in settings.dict().items():
     if key not in ['EMAIL_SECTIONS', 'OPENAI_API_KEY', 'BREVO_API_KEY']:  # Exclude sensitive or large data
         print(f"{key}: {value}")
+
+TIMEZONE = timezone.utc
