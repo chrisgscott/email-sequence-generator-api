@@ -7,6 +7,9 @@ import json
 from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.exceptions import AppException
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 openai.api_key = settings.OPENAI_API_KEY
 
