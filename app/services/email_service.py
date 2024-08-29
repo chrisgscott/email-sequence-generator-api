@@ -11,7 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import func
 from datetime import date
 import pytz
-import timedelta
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
