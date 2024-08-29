@@ -18,15 +18,12 @@ logger = logging.getLogger(__name__)
 async def webhook(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     logger.info("Webhook endpoint hit")
     try:
-        # Log the raw incoming data
         raw_data = await request.body()
         logger.info(f"Received webhook data: {raw_data.decode()}")
 
-        # Parse the incoming JSON data
         data = await request.json()
         logger.info(f"Parsed JSON data: {data}")
 
-        # Extract the required fields, with fallbacks
         topic = data.get("topic") or data.get("form_fields", {}).get("topic") or data.get("topic_field")
         inputs = data.get("inputs") or data.get("form_fields") or {}
         recipient_email = data.get("recipient_email") or data.get("form_fields", {}).get("email") or data.get("email_field")
@@ -36,7 +33,6 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
         if not topic or not recipient_email:
             raise ValueError("Missing required fields: topic and recipient_email")
 
-        # Validate email
         class EmailValidator(BaseModel):
             email: EmailStr
 
@@ -45,7 +41,6 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
         except ValidationError:
             raise ValueError(f"Invalid email address: {recipient_email}")
 
-        # Create SequenceCreate object
         sequence = sequence_schema.SequenceCreate(
             topic=topic,
             inputs=inputs,
@@ -53,16 +48,13 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
         )
 
         logger.info("Generating email sequence using OpenAI")
-        # Generate email sequence using OpenAI
-        emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs)
+        emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs, batch_size=5)
         logger.info(f"Generated {len(emails)} emails")
 
         logger.info("Creating sequence in database")
-        # Create new sequence in database
         db_sequence = sequence_service.create_sequence(db, sequence, emails)
         logger.info(f"Created sequence with ID: {db_sequence.id}")
 
-        # Schedule emails using background tasks
         for email in db_sequence.emails:
             email_service.send_email_background(background_tasks, sequence.recipient_email, email, sequence.inputs)
 
@@ -121,7 +113,6 @@ def schedule_next_batch_of_emails(sequence, days=30):
 @router.post("/test_email_scheduling")
 def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     try:
-        # Create a test email
         current_time = datetime.utcnow()
         test_email = EmailContent(
             subject="Test Email Scheduling",
@@ -134,8 +125,7 @@ def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depen
             scheduled_for=current_time + timedelta(minutes=1)
         )
         
-        # Send the email immediately to test the new send_email function
-        recipient_email = "chrisgscott@gmail.com"  # Replace with your test email
+        recipient_email = "chrisgscott@gmail.com"
         send_email(recipient_email, test_email, {"param1": "test_value"})
         
         return {"message": "Test email sent successfully"}

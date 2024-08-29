@@ -20,16 +20,16 @@ class Settings(BaseSettings):
     OPENAI_TOP_P: float = 1.0
     OPENAI_FREQUENCY_PENALTY: float = 0.0
     OPENAI_PRESENCE_PENALTY: float = 0.0
-    SEQUENCE_LENGTH: int = 12
+    SEQUENCE_LENGTH: int = 365 # Number of emails in the sequence    
+    SEQUENCE_FREQUENCY_DAYS: int = 1  # How many days between emails   
     EMAIL_FROM: str
-    EMAIL_FROM_NAME: str  # Add this line
+    EMAIL_FROM_NAME: str 
     EMAIL_SECTIONS: List[EmailSection] = [
         EmailSection(name="intro_content", description="A brief introduction", word_count="30-50"),
         EmailSection(name="week_task", description="The main task or focus for the week", word_count="50-100"),
         EmailSection(name="quick_tip", description="A short, actionable tip related to the week's task", word_count="20-30"),
         EmailSection(name="cta", description="A call-to-action encouraging further engagement", word_count="20-30")
     ]
-    SEQUENCE_FREQUENCY_DAYS: int = 30  # Default to monthly
 
     class Config:
         env_file = ".env"
