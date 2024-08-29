@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from app.models.sequence import Sequence
-from app.models.email import Email
-from app.schemas.sequence import SequenceCreate, EmailContent
+from app.models.email import Email, EmailContent
+from app.schemas.sequence import SequenceCreate
+from typing import List
 
 def create_sequence(db: Session, sequence: SequenceCreate, emails: list[EmailContent]):
     db_sequence = Sequence(

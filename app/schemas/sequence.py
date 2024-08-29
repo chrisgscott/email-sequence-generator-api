@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr
-from typing import Dict, List
+from typing import Dict, List, Optional
 from datetime import datetime
-from typing import Optional
 
 class EmailContent(BaseModel):
     subject: str
