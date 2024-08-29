@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 from pydantic import EmailStr, ValidationError, BaseModel
 from app.db.database import get_db, SessionLocal
 from app.schemas import sequence as sequence_schema
-from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailContent  # Add EmailContent here
+from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailContent
 from app.services import openai_service, email_service, sequence_service
 from datetime import datetime, timedelta, timezone
 from app.services.email_service import send_email
 from app.core.config import settings
 from loguru import logger
+from app.core.exceptions import AppException
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
