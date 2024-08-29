@@ -136,27 +136,3 @@ def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depen
     except Exception as e:
         logger.error(f"Error in test_email_scheduling: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-def check_and_send_scheduled_emails(db: Session = Depends(get_db)):
-    current_date = datetime.now(timezone.utc).date()
-    logger.info(f"Checking for emails scheduled for {current_date}")
-    
-    emails_to_send = sequence_service.get_emails_to_send(db, current_date)
-    logger.info(f"Found {len(emails_to_send)} emails to send")
-    
-    for email in emails_to_send:
-        try:
-            sequence = sequence_service.get_sequence_by_email_id(db, email.id)
-            api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
-            
-            email.sent_to_brevo = True
-            email.sent_to_brevo_at = datetime.now(timezone.utc)
-            email.brevo_message_id = api_response.message_id
-            db.commit()
-            
-            logger.info(f"Email {email.id} sent successfully")
-        except Exception as e:
-            logger.error(f"Error sending email {email.id}: {str(e)}")
-            db.rollback()
-    
-    logger.info("Finished checking and sending scheduled emails")
