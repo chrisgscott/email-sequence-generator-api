@@ -98,7 +98,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
             top_p=settings.OPENAI_TOP_P,
             frequency_penalty=settings.OPENAI_FREQUENCY_PENALTY,
             presence_penalty=settings.OPENAI_PRESENCE_PENALTY,
-            timeout=180  # Increase timeout to 3 minutes
+            timeout=settings.OPENAI_REQUEST_TIMEOUT
         )
         
         logger.info(f"Received response from OpenAI API for emails {start_index + 1} to {start_index + batch_size}")
