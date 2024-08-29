@@ -11,6 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import func
 from datetime import date
 import pytz
+import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +34,19 @@ def send_email(to_email: str, email_content: EmailContent, inputs: dict):
         **inputs
     }
     
-    # Convert scheduled_for to RFC3339 format
-    scheduled_at = email_content.scheduled_for.astimezone(pytz.UTC).isoformat()
+    # Ensure the scheduled_for date is in the future
+    current_time = datetime.now(timezone.utc)
+    scheduled_at = max(email_content.scheduled_for, current_time + timedelta(minutes=5))
+    scheduled_at_str = scheduled_at.astimezone(pytz.UTC).isoformat()
     
     try:
         api_response = api_instance.send_transac_email({
             "templateId": settings.BREVO_EMAIL_TEMPLATE_ID,
             "to": to,
             "params": params,
-            "scheduledAt": scheduled_at
+            "scheduledAt": scheduled_at_str
         })
-        logger.info(f"Email scheduled with Brevo for {scheduled_at}. Message ID: {api_response.message_id}")
+        logger.info(f"Email scheduled with Brevo for {scheduled_at_str}. Message ID: {api_response.message_id}")
         return api_response
     except ApiException as e:
         logger.error(f"Exception when calling SMTPApi->send_transac_email: {e}")
