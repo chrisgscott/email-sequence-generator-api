@@ -5,11 +5,6 @@ Last updated: 2024-08-30
 ## High Priority Tasks
 
 ### Handle Large Email Sequences and OpenAI Token Limits
-- [ ] Create unit tests for continuation logic and batch processing
-- [ ] Develop integration tests for the entire email generation process
-- [ ] Update API documentation to reflect new retry endpoint and email generation behavior
-- [ ] Implement monitoring and alerts for failed or long-running sequences
-- [ ] Update user interface to show sequence generation progress and allow manual retries
 - [ ] Ensure batch size and other relevant settings are configurable and documented
 
 ### Idempotency
@@ -55,15 +50,6 @@ Last updated: 2024-08-30
 - [ ] Add endpoints for checking sequence generation progress
 - [ ] Implement endpoint for manually triggering email sends
 - [ ] Create endpoint for updating or canceling scheduled emails
-
-### Testing
-- [ ] Develop unit tests for core functionalities
-- [ ] Create integration tests for the email generation and sending process
-
-### Documentation
-- [ ] Update API documentation
-- [ ] Create user guide for email sequence generation process
-- [ ] Document the process of creating and adding new generators
 
 ### Security Enhancements
 - [ ] Review and enhance authentication mechanisms
@@ -121,17 +107,35 @@ Last updated: 2024-08-30
 - [ ] Enhance error handling and logging in the FastAPI application
 - [ ] Add health check endpoints
 - [ ] Implement circuit breaker pattern for inter-service communication
-- [ ] Set up monitoring and alerting for system health
 - [ ] Consider implementing a queue system for webhook requests
+
+## Testing (To be addressed after core functionality)
+- [ ] Create unit tests for continuation logic and batch processing
+- [ ] Develop integration tests for the entire email generation process
+- [ ] Develop unit tests for core functionalities
+- [ ] Create integration tests for the email generation and sending process
+- [ ] Implement a system for testing generators before deployment
+- [ ] Allow for sample runs with test data
+- [ ] Provide feedback on potential issues or improvements
+- [ ] Develop system to test generated content for common issues before sending
+
+## Documentation (To be addressed after core functionality)
+- [ ] Update API documentation to reflect new retry endpoint and email generation behavior
+- [ ] Create user guide for email sequence generation process
+- [ ] Document the process of creating and adding new generators
+- [ ] Create a changelog system to track modifications to generators over time
+
+## Monitoring and Alerts (To be addressed after core functionality)
+- [ ] Implement monitoring and alerts for failed or long-running sequences
+- [ ] Set up monitoring for critical system components
+- [ ] Implement alerting for errors or system issues
+- [ ] Set up monitoring and alerting for system health
+- [ ] Display usage statistics, error rates, and other relevant metrics for generators
 
 ## Lower Priority (For Future Enhancements)
 
 ### Performance Optimization
 - [ ] Profile application to identify and address bottlenecks
-
-### Monitoring and Alerting
-- [ ] Set up monitoring for critical system components
-- [ ] Implement alerting for errors or system issues
 
 ### Data Retention and Privacy
 - [ ] Develop and implement data retention policies
@@ -145,9 +149,6 @@ Last updated: 2024-08-30
 
 ### Handling Attachments
 - [ ] If needed, implement support for email attachments
-
-### Testing Generated Content
-- [ ] Develop system to test generated content for common issues before sending
 
 ### Audit Trails
 - [ ] Implement comprehensive logging for all actions
