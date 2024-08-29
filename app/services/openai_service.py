@@ -47,7 +47,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
     {sections_prompt}
     
     Also provide:
-    {len(settings.EMAIL_SECTIONS) + 1}. subject: A compelling subject line for the email
+    {len(settings.EMAIL_SECTIONS) + 1}. subject: A compelling subject line for the email. DO NOT include "Email Number" or anything like that in the subject line.
     
     Return the result as a JSON array with {batch_size} items."""
     
