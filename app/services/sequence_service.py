@@ -89,7 +89,15 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
         for email in emails
     ]
     
+    logger.info(f"Attempting to insert {len(email_data)} emails for sequence {sequence_id}")
+    
     stmt = insert(Email).values(email_data)
     stmt = stmt.on_conflict_do_nothing()  # In case of unique constraint violations
-    db.execute(stmt)
+    result = db.execute(stmt)
     db.flush()
+    
+    logger.info(f"Inserted {result.rowcount} emails for sequence {sequence_id}")
+
+    # Verify the insertion
+    inserted_emails = db.query(Email).filter(Email.sequence_id == sequence_id).all()
+    logger.info(f"Total emails in database for sequence {sequence_id}: {len(inserted_emails)}")
