@@ -8,7 +8,13 @@ Last updated: 2024-08-30
 - [x] Implement token limit detection for OpenAI responses
 - [x] Develop a batching mechanism for generating large sequences
 - [x] Add progress tracking for email generation
-- [ ] Create continuation logic for generating emails across multiple API calls
+- [x] Create continuation logic for generating emails across multiple API calls
+- [ ] Create unit tests for continuation logic and batch processing
+- [ ] Develop integration tests for the entire email generation process
+- [ ] Update API documentation to reflect new retry endpoint and email generation behavior
+- [ ] Implement monitoring and alerts for failed or long-running sequences
+- [ ] Update user interface to show sequence generation progress and allow manual retries
+- [ ] Ensure batch size and other relevant settings are configurable and documented
 
 ### Idempotency
 - [ ] Ensure webhook endpoint can handle duplicate requests without creating multiple sequences
