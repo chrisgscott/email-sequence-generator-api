@@ -2,7 +2,7 @@ import openai
 from app.core.config import settings, TIMEZONE
 from app.schemas.sequence import EmailContent as EmailBase
 from typing import List, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.exceptions import AppException
@@ -71,8 +71,11 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int
         },
         "required": ["emails"]
     }
-
+    
     logger.info(f"Sending request to OpenAI API for emails {start_index + 1} to {start_index + batch_size}")
+    logger.info(f"Full prompt being sent to OpenAI:\n{prompt}")
+    logger.info(f"JSON structure for function call:\n{json.dumps(json_structure, indent=2)}")
+    
     try:
         response = openai.ChatCompletion.create(
             model=settings.OPENAI_MODEL,
@@ -91,11 +94,13 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int
             top_p=settings.OPENAI_TOP_P,
             frequency_penalty=settings.OPENAI_FREQUENCY_PENALTY,
             presence_penalty=settings.OPENAI_PRESENCE_PENALTY,
-            timeout=120  # Increase timeout to 120 seconds
+            timeout=180  # Increase timeout to 3 minutes
         )
         
         logger.info(f"Received response from OpenAI API for emails {start_index + 1} to {start_index + batch_size}")
         function_call = response.choices[0].message.function_call
+        logger.info(f"Function call response:\n{json.dumps(function_call.arguments, indent=2)}")
+        
         emails_data = json.loads(function_call.arguments)['emails']
         
         processed_emails = []
