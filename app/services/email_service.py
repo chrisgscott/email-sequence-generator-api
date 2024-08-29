@@ -14,6 +14,7 @@ import pytz
 from app.models.sequence import Sequence
 from sqlalchemy.orm import Session
 from app.core.exceptions import AppException
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -66,11 +67,11 @@ def send_email(recipient_email: str, email_content: EmailContent, inputs: Dict[s
 def check_and_send_scheduled_emails():
     db = SessionLocal()
     try:
-        current_date = date.today()
-        logger.info(f"Checking for emails scheduled for {current_date}")
+        current_date = datetime.now(TIMEZONE)
+        logger.info(f"Checking for emails scheduled up to {current_date}")
         
         emails_to_send = db.query(Email).filter(
-            func.date(Email.scheduled_for) == current_date,
+            Email.scheduled_for <= current_date,
             Email.sent_to_brevo == False
         ).all()
         
@@ -85,10 +86,10 @@ def check_and_send_scheduled_emails():
                 api_response = send_email(email.sequence.recipient_email, email, email.sequence.inputs)
                 
                 email.sent_to_brevo = True
-                email.sent_to_brevo_at = datetime.now(TIMEZONE)
+                email.sent_to_brevo_at = current_date
                 email.brevo_message_id = api_response.message_id
                 db.commit()
-                logger.info(f"Scheduled email {email.id} sent successfully")
+                logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
             except Exception as e:
                 logger.error(f"Error sending email {email.id}: {str(e)}")
                 db.rollback()

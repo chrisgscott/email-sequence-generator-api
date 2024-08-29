@@ -74,7 +74,8 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         sequence.topic,
                         sequence.inputs,
                         batch,
-                        min(settings.BATCH_SIZE, settings.SEQUENCE_LENGTH - batch)
+                        min(settings.BATCH_SIZE, settings.SEQUENCE_LENGTH - batch),
+                        buffer_time=timedelta(hours=1)  # Add a 1-hour buffer
                     ),
                     timeout=180  # 3 minutes timeout
                 )

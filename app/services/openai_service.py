@@ -35,7 +35,7 @@ openai_limiter = RateLimiter(max_calls=60, period=60)
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int, batch_size: int) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int, batch_size: int, buffer_time: timedelta = timedelta(hours=1)) -> List[EmailBase]:
     logger.info(f"Generating email sequence for topic: {topic}, start_index: {start_index}, batch_size: {batch_size}")
     sections_prompt = "\n".join([f"{i+1}. {section.name}: {section.description} ({section.word_count} words)" 
                                  for i, section in enumerate(settings.EMAIL_SECTIONS)])
@@ -104,7 +104,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
         emails_data = json.loads(function_call.arguments)['emails']
         
         processed_emails = []
-        current_date = datetime.now(TIMEZONE)
+        current_date = datetime.now(TIMEZONE) + buffer_time
         for i, email in enumerate(emails_data):
             for section in settings.EMAIL_SECTIONS:
                 if section.name not in email['content']:
