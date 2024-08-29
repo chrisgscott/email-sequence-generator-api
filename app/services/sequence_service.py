@@ -4,6 +4,8 @@ from app.models.email import Email
 from app.schemas.sequence import SequenceCreate, EmailContent
 from typing import List
 from sqlalchemy.exc import SQLAlchemyError
+from app.core.exceptions import AppException
+from loguru import logger
 
 def create_sequence(db: Session, sequence: SequenceCreate, emails: list[EmailContent]):
     db_sequence = Sequence(

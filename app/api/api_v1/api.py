@@ -12,6 +12,8 @@ from app.services.email_service import send_email
 from app.core.config import settings
 from loguru import logger
 from app.core.exceptions import AppException
+from app.models.sequence import Sequence
+import asyncio
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
