@@ -5,10 +5,6 @@ Last updated: 2024-08-30
 ## High Priority Tasks
 
 ### Handle Large Email Sequences and OpenAI Token Limits
-- [x] Implement token limit detection for OpenAI responses
-- [x] Develop a batching mechanism for generating large sequences
-- [x] Add progress tracking for email generation
-- [x] Create continuation logic for generating emails across multiple API calls
 - [ ] Create unit tests for continuation logic and batch processing
 - [ ] Develop integration tests for the entire email generation process
 - [ ] Update API documentation to reflect new retry endpoint and email generation behavior
@@ -40,11 +36,9 @@ Last updated: 2024-08-30
 - [ ] Create a shared interface for all generators
 
 ### Brevo API Integration Improvements
-- [x] Handle 3-day scheduling limitation for Brevo API
 - [ ] Implement a system to queue emails beyond the 3-day window
 
 ### OpenAI Integration Enhancements
-- [x] Implement function calling for more structured OpenAI responses
 - [ ] Add fallback mechanisms for OpenAI API failures
 
 ### Email Sequence Generation Improvements
@@ -221,6 +215,11 @@ Last updated: 2024-08-30
 - [x] Implement function calling for more structured OpenAI responses
 - [x] Develop a batching mechanism for generating large sequences
 - [x] Add progress tracking for email generation
+- [x] Create continuation logic for generating emails across multiple API calls
+- [x] Refactor OpenAI prompts into a separate file for easier management
+- [x] Implement more robust error handling in the generate_email_sequence function
+- [x] Update JSON structure for OpenAI function calls to include 'content' and 'subject' fields
+- [x] Implement graceful handling of missing 'content' or 'subject' keys in OpenAI responses
 
 ## Notes
 
