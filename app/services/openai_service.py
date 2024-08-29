@@ -36,21 +36,25 @@ openai_limiter = RateLimiter(max_calls=60, period=60)
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int, batch_size: int, buffer_time: timedelta = timedelta(hours=1)) -> List[EmailBase]:
-    logger.info(f"Generating email sequence for topic: {topic}, start_index: {start_index}, batch_size: {batch_size}")
-    sections_prompt = "\n".join([f"{i+1}. {section.name}: {section.description} ({section.word_count} words)" 
-                                 for i, section in enumerate(settings.EMAIL_SECTIONS)])
+    sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
+        index=i+1, 
+        name=section.name, 
+        description=section.description, 
+        word_count=section.word_count
+    ) for i, section in enumerate(settings.EMAIL_SECTIONS)])
     
-    prompt = f"""Generate content for emails {start_index + 1} to {start_index + batch_size} in an email sequence about {topic}.
-    User inputs: {json.dumps(inputs)}
+    subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(settings.EMAIL_SECTIONS) + 1)
     
-    For each email in the sequence, provide the following sections:
-    {sections_prompt}
-    
-    Also provide:
-    {len(settings.EMAIL_SECTIONS) + 1}. subject: A compelling subject line for the email. DO NOT include "Email Number" or anything like that in the subject line.
-    
-    Return the result as a JSON array with {batch_size} items."""
-    
+    prompt = settings.OPENAI_EMAIL_PROMPT.format(
+        start_index=start_index + 1,
+        end_index=start_index + batch_size,
+        topic=topic,
+        inputs=json.dumps(inputs),
+        sections_prompt=sections_prompt,
+        subject_prompt=subject_prompt,
+        batch_size=batch_size
+    )
+
     json_structure = {
         "type": "object",
         "properties": {
@@ -58,14 +62,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "properties": {
-                        "subject": {"type": "string"},
-                        "content": {
-                            "type": "object",
-                            "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
-                        }
-                    },
-                    "required": ["subject", "content"]
+                    "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
                 }
             }
         },

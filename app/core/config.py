@@ -2,6 +2,7 @@ import os
 from pydantic_settings import BaseSettings
 from typing import List
 from datetime import timezone
+from app.core.prompts import EMAIL_PROMPT, SECTIONS_PROMPT, SUBJECT_PROMPT
 
 class EmailSection(BaseSettings):
     name: str
@@ -32,6 +33,11 @@ class Settings(BaseSettings):
         EmailSection(name="cta", description="A call-to-action encouraging further engagement", word_count="20-30")
     ]
     BATCH_SIZE: int = 10
+
+    # OpenAI prompt settings
+    OPENAI_EMAIL_PROMPT: str = EMAIL_PROMPT
+    OPENAI_SECTIONS_PROMPT: str = SECTIONS_PROMPT
+    OPENAI_SUBJECT_PROMPT: str = SUBJECT_PROMPT
 
     class Config:
         env_file = ".env"
