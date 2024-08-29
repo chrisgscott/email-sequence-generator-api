@@ -2,11 +2,11 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import EmailStr, ValidationError, BaseModel
-from app.db.database import get_db
+from app.db.database import get_db, SessionLocal
 from app.schemas import sequence as sequence_schema
 from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailContent  # Add EmailContent here
 from app.services import openai_service, email_service, sequence_service
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.services.email_service import send_email
 
 router = APIRouter()
@@ -73,11 +73,15 @@ def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):
         emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs)
         db_sequence = sequence_service.create_sequence(db, sequence, emails)
         
+        current_time = datetime.now(timezone.utc)
+        db_sequence.created_at = current_time
+        db_sequence.updated_at = current_time
+        
         for email in db_sequence.emails:
             try:
                 api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
                 email.sent_to_brevo = True
-                email.sent_to_brevo_at = datetime.now(timezone.utc)
+                email.sent_to_brevo_at = current_time
                 email.brevo_message_id = api_response.message_id
             except Exception as e:
                 logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")

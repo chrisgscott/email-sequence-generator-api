@@ -19,32 +19,33 @@ configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = settings.BREVO_API_KEY
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def send_email(to_email: str, email_content: EmailContent, params: dict):
+def send_email(to_email: str, email_content: EmailContent, inputs: dict):
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = settings.BREVO_API_KEY
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-
-    params_to_send = {
-        "subject": email_content.subject,
+    
+    subject = email_content.subject
+    sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
+    to = [{"email": to_email}]
+    params = {
+        "subject": subject,
         **email_content.content,
-        **params
+        **inputs
     }
-    logger.info(f"Params being sent to Brevo: {params_to_send}")
-
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": to_email}],
-        template_id=settings.BREVO_EMAIL_TEMPLATE_ID,
-        params=params_to_send,
-        sender={"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
-    )
-
+    
+    scheduled_at = int(email_content.scheduled_for.replace(tzinfo=pytz.UTC).timestamp())
+    
     try:
-        api_response = api_instance.send_transac_email(send_smtp_email)
-        logger.info(f"Email sent successfully to {to_email}. Message ID: {api_response.message_id}")
+        api_response = api_instance.send_transac_email({
+            "templateId": settings.BREVO_EMAIL_TEMPLATE_ID,
+            "to": to,
+            "params": params,
+            "scheduledAt": scheduled_at
+        })
+        logger.info(f"Email scheduled with Brevo for {email_content.scheduled_for}. Message ID: {api_response.message_id}")
         return api_response
     except ApiException as e:
         logger.error(f"Exception when calling SMTPApi->send_transac_email: {e}")
-        raise
-    except Exception as e:
-        logger.error(f"Unexpected error when sending email: {e}")
         raise
 
 def check_and_send_scheduled_emails():
