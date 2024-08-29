@@ -35,7 +35,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         
         # Validate required fields
         if not all([topic, recipient_email, inputs]):
-            raise ValueError("Missing required fields in webhook data")
+            raise AppException("Missing required fields in webhook data", status_code=400)
         
         # Create a SequenceCreate object
         sequence_create = SequenceCreate(topic=topic, recipient_email=recipient_email, inputs=inputs)
@@ -48,6 +48,9 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             db.commit()
             db.refresh(db_sequence)
             sequence_id = db_sequence.id
+        except Exception as e:
+            logger.error(f"Error creating sequence in database: {str(e)}")
+            raise AppException("Error creating sequence", status_code=500)
         finally:
             db.close()
         
@@ -56,16 +59,25 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         
         logger.info("Webhook processed successfully")
         return {"message": "Webhook processed successfully", "sequence_id": sequence_id}
+    except AppException as e:
+        logger.error(f"AppException in webhook: {str(e)}")
+        raise
     except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Unexpected error in webhook: {str(e)}")
+        raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate, background_tasks: BackgroundTasks):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
     db = SessionLocal()
     try:
+        db_sequence = sequence_service.get_sequence(db, sequence_id)
+        if not db_sequence:
+            raise AppException(f"Sequence {sequence_id} not found", status_code=404)
+
         total_batches = (settings.SEQUENCE_LENGTH + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE
-        for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
+        start_batch = db_sequence.progress * total_batches // 100
+
+        for batch in range(start_batch * settings.BATCH_SIZE, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
             batch_number = batch // settings.BATCH_SIZE + 1
             logger.info(f"Generating batch {batch_number} of {total_batches} for sequence_id: {sequence_id}")
             try:
@@ -75,37 +87,45 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         sequence.inputs,
                         batch,
                         min(settings.BATCH_SIZE, settings.SEQUENCE_LENGTH - batch),
-                        buffer_time=timedelta(hours=1)  # Add a 1-hour buffer
+                        buffer_time=timedelta(hours=1)
                     ),
                     timeout=180  # 3 minutes timeout
                 )
-                # Save batch emails to the database
                 sequence_service.add_emails_to_sequence(db, sequence_id, batch_emails)
                 logger.info(f"Saved batch {batch_number} to database for sequence_id: {sequence_id}")
                 
-                # Update sequence progress
                 progress = min(100, int((batch_number / total_batches) * 100))
                 sequence_service.update_sequence_progress(db, sequence_id, progress)
                 
                 db.commit()
             except asyncio.TimeoutError:
                 logger.error(f"Timeout occurred while generating batch {batch_number} for sequence_id: {sequence_id}")
-                continue
-            except Exception as e:
-                logger.error(f"Error generating batch {batch_number} for sequence_id: {sequence_id}: {str(e)}")
+                sequence_service.update_sequence_progress(db, sequence_id, progress)
+                db.commit()
+                raise AppException("Timeout occurred while generating email sequence", status_code=504)
+            except AppException as e:
+                logger.error(f"AppException generating batch {batch_number} for sequence_id: {sequence_id}: {str(e)}")
                 sequence_service.mark_sequence_failed(db, sequence_id, str(e))
                 db.commit()
-                return
+                raise
+            except Exception as e:
+                logger.error(f"Unexpected error generating batch {batch_number} for sequence_id: {sequence_id}: {str(e)}")
+                sequence_service.mark_sequence_failed(db, sequence_id, str(e))
+                db.commit()
+                raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
         logger.info(f"Email generation complete for sequence_id: {sequence_id}. Finalizing sequence.")
         sequence_service.finalize_sequence(db, sequence_id)
         logger.info(f"Sequence finalized for sequence_id: {sequence_id}")
-        
         db.commit()
-    except AppException as e:
-        logger.error(f"Error generating email sequence for sequence_id: {sequence_id}: {str(e)}")
+    except AppException:
+        # Re-raise AppExceptions as they are already handled
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error generating email sequence for sequence_id: {sequence_id}: {str(e)}")
         sequence_service.mark_sequence_failed(db, sequence_id, str(e))
         db.commit()
+        raise AppException(f"Unexpected error: {str(e)}", status_code=500)
     finally:
         db.close()
 
@@ -127,30 +147,46 @@ def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):
                 email.sent_to_brevo = True
                 email.sent_to_brevo_at = current_time
                 email.brevo_message_id = api_response.message_id
-            except Exception as e:
+            except AppException as e:
                 logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")
+            except Exception as e:
+                logger.error(f"Unexpected error scheduling email {email.id} with Brevo: {str(e)}")
         
         db.commit()
         return db_sequence
+    except AppException as e:
+        db.rollback()
+        logger.error(f"AppException creating sequence: {str(e)}")
+        raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Error creating sequence: {str(e)}")
-        raise HTTPException(status_code=500, detail="Error creating sequence")
+        logger.error(f"Unexpected error creating sequence: {str(e)}")
+        raise AppException(f"Error creating sequence: {str(e)}", status_code=500)
 
 def schedule_next_batch_of_emails(sequence, days=30):
-    cutoff_date = datetime.now() + timedelta(days=days)
-    emails_to_schedule = [email for email in sequence.emails if email.scheduled_for <= cutoff_date and not email.sent_to_brevo]
-    
-    for email in emails_to_schedule:
-        try:
-            api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
-            email.sent_to_brevo = True
-            email.sent_to_brevo_at = datetime.now(timezone.utc)
-            email.brevo_message_id = api_response.message_id
-        except Exception as e:
-            logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")
-    
-    db.commit()
+    db = SessionLocal()
+    try:
+        cutoff_date = datetime.now() + timedelta(days=days)
+        emails_to_schedule = [email for email in sequence.emails if email.scheduled_for <= cutoff_date and not email.sent_to_brevo]
+        
+        for email in emails_to_schedule:
+            try:
+                api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
+                email.sent_to_brevo = True
+                email.sent_to_brevo_at = datetime.now(timezone.utc)
+                email.brevo_message_id = api_response.message_id
+            except AppException as e:
+                logger.error(f"Failed to schedule email {email.id} with Brevo: {str(e)}")
+            except Exception as e:
+                logger.error(f"Unexpected error scheduling email {email.id} with Brevo: {str(e)}")
+        
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in schedule_next_batch_of_emails: {str(e)}")
+        raise AppException(f"Error scheduling emails: {str(e)}", status_code=500)
+    finally:
+        db.close()
 
 @router.post("/test_email_scheduling")
 def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
@@ -171,6 +207,29 @@ def test_email_scheduling(background_tasks: BackgroundTasks, db: Session = Depen
         send_email(recipient_email, test_email, {"param1": "test_value"})
         
         return {"message": "Test email sent successfully"}
+    except AppException as e:
+        logger.error(f"AppException in test_email_scheduling: {str(e)}")
+        raise
     except Exception as e:
-        logger.error(f"Error in test_email_scheduling: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error in test_email_scheduling: {str(e)}")
+        raise AppException(f"Error in test email scheduling: {str(e)}", status_code=500)
+
+@router.post("/sequences/{sequence_id}/retry", response_model=SequenceResponse)
+async def retry_sequence_generation(sequence_id: int, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    try:
+        sequence = sequence_service.get_sequence(db, sequence_id)
+        if not sequence:
+            raise AppException("Sequence not found", status_code=404)
+        
+        if sequence.status not in ["failed", "pending"]:
+            raise AppException("Sequence is not in a retryable state", status_code=400)
+        
+        sequence_create = SequenceCreate(topic=sequence.topic, recipient_email=sequence.recipient_email, inputs=sequence.inputs)
+        background_tasks.add_task(generate_and_store_email_sequence, sequence_id, sequence_create, background_tasks)
+        
+        return SequenceResponse(id=sequence.id, status="retrying")
+    except AppException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in retry_sequence_generation: {str(e)}")
+        raise AppException(f"Error retrying sequence generation: {str(e)}", status_code=500)

@@ -1,8 +1,6 @@
-from sqlalchemy import Column, Integer, String, JSON, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-
-from app.db.database import Base
+from app.db.base_class import Base
 
 class Sequence(Base):
     __tablename__ = "sequences"
@@ -11,11 +9,10 @@ class Sequence(Base):
     topic = Column(String, index=True)
     inputs = Column(JSON)
     recipient_email = Column(String)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    status = Column(String, default="pending")
+    is_active = Column(Boolean, default=True)
+    next_email_date = Column(DateTime(timezone=True))
     progress = Column(Integer, default=0)
+    status = Column(String, default="pending")
     error_message = Column(String, nullable=True)
-    next_email_date = Column(DateTime(timezone=True), nullable=True)
-
-    emails = relationship("Email", back_populates="sequence", cascade="all, delete-orphan")
+    
+    emails = relationship("Email", back_populates="sequence")

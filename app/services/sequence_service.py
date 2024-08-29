@@ -101,3 +101,6 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
     # Verify the insertion
     inserted_emails = db.query(Email).filter(Email.sequence_id == sequence_id).all()
     logger.info(f"Total emails in database for sequence {sequence_id}: {len(inserted_emails)}")
+
+def get_sequence(db: Session, sequence_id: int) -> Sequence:
+    return db.query(Sequence).filter(Sequence.id == sequence_id).first()
