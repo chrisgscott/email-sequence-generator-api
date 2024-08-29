@@ -2,6 +2,30 @@
 
 Last updated: 2024-08-29
 
+## High Priority Tasks
+
+1. Optimize current code for memory efficiency
+   - Profile the application to identify memory-intensive areas
+   - Implement memory-saving techniques in identified hotspots
+
+2. Investigate potential memory leaks
+   - Use memory profiling tools to track memory usage over time
+   - Address any identified leaks
+
+3. Implement asynchronous processing or queue-based system for long-running tasks
+   - Research and select appropriate async framework or queue system
+   - Refactor email generation and sending processes to use the chosen system
+
+4. Improve memory management practices
+   - Review and optimize database connection handling
+   - Ensure proper closure of resources (e.g., file handles, network connections)
+   - Implement more aggressive garbage collection if necessary
+
+5. General code refactoring and optimization
+   - Review and refactor complex functions for better readability and performance
+   - Optimize database queries and ORM usage
+   - Consider caching strategies for frequently accessed data
+
 ## High Priority (Essential for Launch)
 
 1. Implement Email Scheduling and Sending Mechanism

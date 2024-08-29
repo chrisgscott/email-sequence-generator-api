@@ -19,52 +19,43 @@ logger = logging.getLogger(__name__)
 async def webhook(request: Request, background_tasks: BackgroundTasks):
     logger.info("Webhook endpoint hit")
     try:
-        raw_data = await request.body()
-        logger.info(f"Received webhook data: {raw_data.decode()}")
-
         data = await request.json()
+        logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
+        
+        # Parse the JSON data
+        topic = data.get("topic")
+        recipient_email = data.get("recipient_email")
+        inputs = data.get("inputs", {})
+        
         logger.info(f"Parsed JSON data: {data}")
-
-        topic = data.get("topic") or data.get("form_fields", {}).get("topic") or data.get("topic_field")
-        inputs = data.get("inputs") or data.get("form_fields") or {}
-        recipient_email = data.get("recipient_email") or data.get("form_fields", {}).get("email") or data.get("email_field")
-
         logger.info(f"Extracted fields - topic: {topic}, recipient_email: {recipient_email}, inputs: {inputs}")
-
-        if not topic or not recipient_email:
-            raise ValueError("Missing required fields: topic and recipient_email")
-
-        class EmailValidator(BaseModel):
-            email: EmailStr
-
-        try:
-            EmailValidator(email=recipient_email)
-        except ValidationError:
-            raise ValueError(f"Invalid email address: {recipient_email}")
-
-        sequence = sequence_schema.SequenceCreate(
-            topic=topic,
-            inputs=inputs,
-            recipient_email=recipient_email
-        )
-
-        # Create a database session
+        
+        # Validate required fields
+        if not all([topic, recipient_email, inputs]):
+            raise ValueError("Missing required fields in webhook data")
+        
+        # Create a SequenceCreate object
+        sequence_create = SequenceCreate(topic=topic, recipient_email=recipient_email, inputs=inputs)
+        
+        # Create the sequence in the database
         db = SessionLocal()
         try:
-            # Create a placeholder sequence in the database
-            db_sequence = sequence_service.create_empty_sequence(db, sequence)
-
-            # Start the email generation as a background task
-            background_tasks.add_task(generate_and_store_email_sequence, db_sequence.id, sequence)
-
-            logger.info("Webhook processed successfully")
-            return {"message": "Webhook processed successfully", "sequence_id": db_sequence.id}
+            db_sequence = Sequence(topic=topic, recipient_email=recipient_email, inputs=inputs)
+            db.add(db_sequence)
+            db.commit()
+            db.refresh(db_sequence)
+            sequence_id = db_sequence.id
         finally:
             db.close()
-
+        
+        # Start the email sequence generation process in the background
+        background_tasks.add_task(generate_and_store_email_sequence, sequence_id, sequence_create, background_tasks)
+        
+        logger.info("Webhook processed successfully")
+        return {"message": "Webhook processed successfully", "sequence_id": sequence_id}
     except Exception as e:
-        logger.error(f"Unexpected error in webhook: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error processing webhook: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate, background_tasks: BackgroundTasks):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
