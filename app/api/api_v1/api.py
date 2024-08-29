@@ -63,27 +63,31 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
         raise HTTPException(status_code=500, detail="Internal server error")
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
-    with get_db() as db:
-        try:
-            emails = []
-            for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
-                batch_emails = openai_service.generate_email_sequence(
-                    sequence.topic, 
-                    sequence.inputs, 
-                    start_index=batch, 
-                    batch_size=settings.BATCH_SIZE
-                )
-                emails.extend(batch_emails)
-                # Update sequence progress in the database
-                sequence_service.update_sequence_progress(db, sequence_id, len(emails))
+    db = SessionLocal()
+    try:
+        emails = []
+        for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
+            batch_emails = openai_service.generate_email_sequence(
+                sequence.topic, 
+                sequence.inputs, 
+                start_index=batch, 
+                batch_size=settings.BATCH_SIZE
+            )
+            emails.extend(batch_emails)
+            # Update sequence progress in the database
+            sequence_service.update_sequence_progress(db, sequence_id, len(emails))
 
-            sequence_service.finalize_sequence(db, sequence_id, emails)
-            # Schedule emails
-            for email in emails:
-                email_service.send_email_background(None, sequence.recipient_email, email, sequence.inputs)
-        except Exception as e:
-            logger.error(f"Error generating email sequence: {str(e)}")
-            sequence_service.mark_sequence_failed(db, sequence_id, str(e))
+        sequence_service.finalize_sequence(db, sequence_id, emails)
+        # Schedule emails
+        for email in emails:
+            email_service.send_email_background(db, sequence.recipient_email, email, sequence.inputs)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error generating email sequence: {str(e)}")
+        sequence_service.mark_sequence_failed(db, sequence_id, str(e))
+    finally:
+        db.close()
 
 @router.post("/sequences", response_model=SequenceResponse)
 def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):

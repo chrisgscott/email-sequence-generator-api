@@ -87,8 +87,8 @@ def check_and_send_scheduled_emails():
     finally:
         db.close()
 
-def send_email_background(background_tasks: BackgroundTasks, to_email: str, email_content: EmailContent, params: dict):
-    background_tasks.add_task(send_email, to_email, email_content, params)
+def send_email_background(db: Session, recipient_email: str, email: EmailContent, inputs: dict):
+    # Your implementation here
 
 def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
     configuration = sib_api_v3_sdk.Configuration()
