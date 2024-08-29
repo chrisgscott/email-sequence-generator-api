@@ -75,10 +75,10 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         batch,
                         min(settings.BATCH_SIZE, settings.SEQUENCE_LENGTH - batch)
                     ),
-                    timeout=150  # 2.5 minutes timeout
+                    timeout=180  # 3 minutes timeout
                 )
                 emails.extend(batch_emails)
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 logger.error(f"Timeout occurred while generating batch {batch // settings.BATCH_SIZE + 1} for sequence_id: {sequence_id}")
                 # Handle the timeout (e.g., skip this batch or use a fallback)
                 continue

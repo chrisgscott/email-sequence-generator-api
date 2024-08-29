@@ -35,7 +35,7 @@ openai_limiter = RateLimiter(max_calls=60, period=60)
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int, batch_size: int) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int, batch_size: int) -> List[EmailBase]:
     logger.info(f"Generating email sequence for topic: {topic}, start_index: {start_index}, batch_size: {batch_size}")
     sections_prompt = "\n".join([f"{i+1}. {section.name}: {section.description} ({section.word_count} words)" 
                                  for i, section in enumerate(settings.EMAIL_SECTIONS)])
@@ -77,7 +77,7 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int
     logger.info(f"JSON structure for function call:\n{json.dumps(json_structure, indent=2)}")
     
     try:
-        response = openai.ChatCompletion.create(
+        response = await openai.ChatCompletion.acreate(
             model=settings.OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that generates content for email sequences."},
