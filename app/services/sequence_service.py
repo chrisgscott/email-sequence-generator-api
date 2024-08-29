@@ -22,3 +22,43 @@ def create_sequence(db: Session, sequence: SequenceCreate, emails: list[EmailCon
     db.commit()
     db.refresh(db_sequence)
     return db_sequence
+
+def create_empty_sequence(db: Session, sequence: SequenceCreate):
+    db_sequence = Sequence(
+        topic=sequence.topic,
+        inputs=sequence.inputs,
+        recipient_email=sequence.recipient_email,
+        status="generating",
+        progress=0
+    )
+    db.add(db_sequence)
+    db.commit()
+    db.refresh(db_sequence)
+    return db_sequence
+
+def update_sequence_progress(db: Session, sequence_id: int, progress: int):
+    db_sequence = db.query(Sequence).filter(Sequence.id == sequence_id).first()
+    if db_sequence:
+        db_sequence.progress = progress
+        db.commit()
+
+def finalize_sequence(db: Session, sequence_id: int, emails: List[EmailContent]):
+    db_sequence = db.query(Sequence).filter(Sequence.id == sequence_id).first()
+    if db_sequence:
+        for email in emails:
+            db_email = Email(
+                subject=email.subject,
+                content=email.content,
+                scheduled_for=email.scheduled_for
+            )
+            db_sequence.emails.append(db_email)
+        db_sequence.status = "completed"
+        db_sequence.progress = len(emails)
+        db.commit()
+
+def mark_sequence_failed(db: Session, sequence_id: int, error_message: str):
+    db_sequence = db.query(Sequence).filter(Sequence.id == sequence_id).first()
+    if db_sequence:
+        db_sequence.status = "failed"
+        db_sequence.error_message = error_message
+        db.commit()

@@ -47,25 +47,43 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
             recipient_email=recipient_email
         )
 
-        logger.info("Generating email sequence using OpenAI")
-        emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs, batch_size=5)
-        logger.info(f"Generated {len(emails)} emails")
+        # Create a placeholder sequence in the database
+        db_sequence = sequence_service.create_empty_sequence(db, sequence)
 
-        logger.info("Creating sequence in database")
-        db_sequence = sequence_service.create_sequence(db, sequence, emails)
-        logger.info(f"Created sequence with ID: {db_sequence.id}")
-
-        for email in db_sequence.emails:
-            email_service.send_email_background(background_tasks, sequence.recipient_email, email, sequence.inputs)
+        # Start the email generation as a background task
+        background_tasks.add_task(generate_and_store_email_sequence, db_sequence.id, sequence)
 
         logger.info("Webhook processed successfully")
-        return {"message": "Webhook received and processed successfully", "sequence_id": db_sequence.id}
+        return {"message": "Email sequence generation started", "sequence_id": db_sequence.id}
     except ValueError as ve:
         logger.error(f"Validation error in webhook: {str(ve)}")
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
+    with get_db() as db:
+        try:
+            emails = []
+            for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
+                batch_emails = openai_service.generate_email_sequence(
+                    sequence.topic, 
+                    sequence.inputs, 
+                    start_index=batch, 
+                    batch_size=settings.BATCH_SIZE
+                )
+                emails.extend(batch_emails)
+                # Update sequence progress in the database
+                sequence_service.update_sequence_progress(db, sequence_id, len(emails))
+
+            sequence_service.finalize_sequence(db, sequence_id, emails)
+            # Schedule emails
+            for email in emails:
+                email_service.send_email_background(None, sequence.recipient_email, email, sequence.inputs)
+        except Exception as e:
+            logger.error(f"Error generating email sequence: {str(e)}")
+            sequence_service.mark_sequence_failed(db, sequence_id, str(e))
 
 @router.post("/sequences", response_model=SequenceResponse)
 def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):

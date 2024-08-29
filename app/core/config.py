@@ -30,6 +30,7 @@ class Settings(BaseSettings):
         EmailSection(name="quick_tip", description="A short, actionable tip related to the week's task", word_count="20-30"),
         EmailSection(name="cta", description="A call-to-action encouraging further engagement", word_count="20-30")
     ]
+    BATCH_SIZE: int = 10
 
     class Config:
         env_file = ".env"
