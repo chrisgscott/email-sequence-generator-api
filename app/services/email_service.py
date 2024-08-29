@@ -90,10 +90,10 @@ def check_and_send_scheduled_emails():
 def send_email_background(db: Session, recipient_email: str, email: EmailContent, inputs: dict):
     # Your implementation here
 
-def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = settings.BREVO_API_KEY
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+    def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = settings.BREVO_API_KEY
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
     
     subject = email_content.subject
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
