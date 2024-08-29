@@ -31,6 +31,8 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
         inputs = data.get("inputs") or data.get("form_fields") or {}
         recipient_email = data.get("recipient_email") or data.get("form_fields", {}).get("email") or data.get("email_field")
 
+        logger.info(f"Extracted fields - topic: {topic}, recipient_email: {recipient_email}, inputs: {inputs}")
+
         if not topic or not recipient_email:
             raise ValueError("Missing required fields: topic and recipient_email")
 
@@ -50,11 +52,15 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
             recipient_email=recipient_email
         )
 
+        logger.info("Generating email sequence using OpenAI")
         # Generate email sequence using OpenAI
         emails = openai_service.generate_email_sequence(sequence.topic, sequence.inputs)
+        logger.info(f"Generated {len(emails)} emails")
 
+        logger.info("Creating sequence in database")
         # Create new sequence in database
         db_sequence = sequence_service.create_sequence(db, sequence, emails)
+        logger.info(f"Created sequence with ID: {db_sequence.id}")
 
         # Schedule emails using background tasks
         for email in db_sequence.emails:

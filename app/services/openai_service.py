@@ -4,9 +4,11 @@ from app.schemas.sequence import EmailContent as EmailBase
 from typing import List, Dict
 from datetime import datetime, timedelta
 import json
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 openai.api_key = settings.OPENAI_API_KEY
 
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBase]:
     sections_prompt = "\n".join([f"{i+1}. {section.name}: {section.description} ({section.word_count} words)" 
                                  for i, section in enumerate(settings.EMAIL_SECTIONS)])
@@ -62,6 +64,7 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
             top_p=settings.OPENAI_TOP_P,
             frequency_penalty=settings.OPENAI_FREQUENCY_PENALTY,
             presence_penalty=settings.OPENAI_PRESENCE_PENALTY,
+            timeout=60  # Add a 60-second timeout
         )
         
         # Extract the function call result
@@ -87,5 +90,9 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str]) -> List[EmailBas
             ))
 
         return processed_emails
+    except openai.error.Timeout:
+        logger.error("OpenAI API request timed out")
+        raise HTTPException(status_code=504, detail="OpenAI API request timed out")
     except Exception as e:
-        raise Exception(f"Error generating email sequence: {str(e)}")
+        logger.error(f"Error in generate_email_sequence: {str(e)}")
+        raise
