@@ -21,8 +21,8 @@ class Settings(BaseSettings):
     OPENAI_TOP_P: float = 1.0
     OPENAI_FREQUENCY_PENALTY: float = 0.0
     OPENAI_PRESENCE_PENALTY: float = 0.0
-    SEQUENCE_LENGTH: int = 365 # Number of emails in the sequence    
-    SEQUENCE_FREQUENCY_DAYS: int = 1  # How many days between emails   
+    SEQUENCE_LENGTH: int = 52 # Number of emails in the sequence    
+    SEQUENCE_FREQUENCY_DAYS: int = 7  # How many days between emails   
     EMAIL_FROM: str
     EMAIL_FROM_NAME: str 
     EMAIL_SECTIONS: List[EmailSection] = [
