@@ -13,6 +13,7 @@ from datetime import date
 import pytz
 from datetime import timedelta
 from app.models.sequence import Sequence
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -88,13 +89,21 @@ def check_and_send_scheduled_emails():
         db.close()
 
 def send_email_background(db: Session, recipient_email: str, email: EmailContent, inputs: dict):
-    # Your implementation here
+    try:
+        message_id = send_email_to_brevo(recipient_email, email, inputs)
+        # Here you might want to update the database to mark the email as sent
+        # For example:
+        # db.query(Email).filter(Email.id == email.id).update({"sent": True, "message_id": message_id})
+        # db.commit()
+    except Exception as e:
+        logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
+        # Here you might want to handle the error, maybe retry later or mark as failed in the database
 
-    def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
-        configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = settings.BREVO_API_KEY
-        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-    
+def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
+    configuration = sib_api_v3_sdk.Configuration()
+    configuration.api_key['api-key'] = settings.BREVO_API_KEY
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+
     subject = email_content.subject
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
     to = [{"email": to_email}]
