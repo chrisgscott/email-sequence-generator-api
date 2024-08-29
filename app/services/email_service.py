@@ -33,7 +33,8 @@ def send_email(to_email: str, email_content: EmailContent, inputs: dict):
         **inputs
     }
     
-    scheduled_at = int(email_content.scheduled_for.replace(tzinfo=pytz.UTC).timestamp())
+    # Convert scheduled_for to RFC3339 format
+    scheduled_at = email_content.scheduled_for.astimezone(pytz.UTC).isoformat()
     
     try:
         api_response = api_instance.send_transac_email({
@@ -42,7 +43,7 @@ def send_email(to_email: str, email_content: EmailContent, inputs: dict):
             "params": params,
             "scheduledAt": scheduled_at
         })
-        logger.info(f"Email scheduled with Brevo for {email_content.scheduled_for}. Message ID: {api_response.message_id}")
+        logger.info(f"Email scheduled with Brevo for {scheduled_at}. Message ID: {api_response.message_id}")
         return api_response
     except ApiException as e:
         logger.error(f"Exception when calling SMTPApi->send_transac_email: {e}")

@@ -8,6 +8,8 @@ from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailContent 
 from app.services import openai_service, email_service, sequence_service
 from datetime import datetime, timedelta, timezone
 from app.services.email_service import send_email
+from app.core.config import settings
+from loguru import logger
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -77,7 +79,9 @@ def create_sequence(sequence: SequenceCreate, db: Session = Depends(get_db)):
         db_sequence.created_at = current_time
         db_sequence.updated_at = current_time
         
-        for email in db_sequence.emails:
+        for i, email in enumerate(db_sequence.emails):
+            scheduled_for = current_time + timedelta(days=i * settings.SEQUENCE_FREQUENCY_DAYS)
+            email.scheduled_for = scheduled_for
             try:
                 api_response = email_service.send_email(sequence.recipient_email, email, sequence.inputs)
                 email.sent_to_brevo = True
