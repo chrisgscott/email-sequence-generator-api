@@ -62,7 +62,14 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
+                    "properties": {
+                        "subject": {"type": "string"},
+                        "content": {
+                            "type": "object",
+                            "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
+                        }
+                    },
+                    "required": ["subject", "content"]
                 }
             }
         },
@@ -103,11 +110,19 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
         processed_emails = []
         current_date = datetime.now(TIMEZONE) + buffer_time
         for i, email in enumerate(emails_data):
+            if 'content' not in email:
+                logger.error(f"Missing 'content' key in email {start_index + i + 1}")
+                email['content'] = {}
+            
             for section in settings.EMAIL_SECTIONS:
                 if section.name not in email['content']:
                     logger.warning(f"Content for {section.name} was not generated in email {start_index + i + 1}")
                     email['content'][section.name] = f"Content for {section.name} was not generated."
             
+            if 'subject' not in email:
+                logger.error(f"Missing 'subject' key in email {start_index + i + 1}")
+                email['subject'] = f"Email {start_index + i + 1}"
+
             scheduled_for = current_date + timedelta(days=(start_index + i) * settings.SEQUENCE_FREQUENCY_DAYS)
             
             processed_emails.append(EmailBase(
@@ -118,15 +133,12 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
         
         logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)} out of {settings.SEQUENCE_LENGTH}")
         return processed_emails
-    except openai.error.Timeout:
-        logger.error(f"OpenAI API request timed out for batch starting at {start_index}")
-        raise AppException("OpenAI API request timed out", status_code=504)
-    except openai.error.APIError as e:
-        logger.error(f"OpenAI API error for batch starting at {start_index}: {str(e)}")
-        raise AppException(f"OpenAI API error: {str(e)}", status_code=500)
-    except openai.error.RateLimitError as e:
-        logger.error(f"OpenAI API rate limit exceeded for batch starting at {start_index}: {str(e)}")
-        raise AppException("OpenAI API rate limit exceeded. Please try again later.", status_code=429)
+    except KeyError as e:
+        logger.error(f"KeyError in OpenAI response for batch starting at {start_index}: {str(e)}")
+        raise AppException(f"Invalid response structure from OpenAI API: {str(e)}", status_code=500)
+    except json.JSONDecodeError as e:
+        logger.error(f"JSONDecodeError in OpenAI response for batch starting at {start_index}: {str(e)}")
+        raise AppException(f"Invalid JSON in OpenAI API response: {str(e)}", status_code=500)
     except Exception as e:
         logger.error(f"Unexpected error in generate_email_sequence for batch starting at {start_index}: {str(e)}")
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
