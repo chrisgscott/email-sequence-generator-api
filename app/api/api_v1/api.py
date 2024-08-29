@@ -64,9 +64,10 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
     db = SessionLocal()
     try:
-        emails = []
+        total_batches = (settings.SEQUENCE_LENGTH + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE
         for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
-            logger.info(f"Generating batch {batch // settings.BATCH_SIZE + 1} of {(settings.SEQUENCE_LENGTH + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE} for sequence_id: {sequence_id}")
+            batch_number = batch // settings.BATCH_SIZE + 1
+            logger.info(f"Generating batch {batch_number} of {total_batches} for sequence_id: {sequence_id}")
             try:
                 batch_emails = await asyncio.wait_for(
                     openai_service.generate_email_sequence(
@@ -77,14 +78,26 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                     ),
                     timeout=180  # 3 minutes timeout
                 )
-                emails.extend(batch_emails)
+                # Save batch emails to the database
+                sequence_service.add_emails_to_sequence(db, sequence_id, batch_emails)
+                logger.info(f"Saved batch {batch_number} to database for sequence_id: {sequence_id}")
+                
+                # Update sequence progress
+                progress = min(100, int((batch_number / total_batches) * 100))
+                sequence_service.update_sequence_progress(db, sequence_id, progress)
+                
+                db.commit()
             except asyncio.TimeoutError:
-                logger.error(f"Timeout occurred while generating batch {batch // settings.BATCH_SIZE + 1} for sequence_id: {sequence_id}")
-                # Handle the timeout (e.g., skip this batch or use a fallback)
+                logger.error(f"Timeout occurred while generating batch {batch_number} for sequence_id: {sequence_id}")
                 continue
+            except Exception as e:
+                logger.error(f"Error generating batch {batch_number} for sequence_id: {sequence_id}: {str(e)}")
+                sequence_service.mark_sequence_failed(db, sequence_id, str(e))
+                db.commit()
+                return
 
         logger.info(f"Email generation complete for sequence_id: {sequence_id}. Finalizing sequence.")
-        sequence_service.finalize_sequence(db, sequence_id, emails)
+        sequence_service.finalize_sequence(db, sequence_id)
         logger.info(f"Sequence finalized for sequence_id: {sequence_id}")
         
         db.commit()
