@@ -66,24 +66,28 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
+async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate, background_tasks: BackgroundTasks):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
     db = SessionLocal()
     try:
         emails = []
-        total_batches = settings.SEQUENCE_LENGTH // settings.BATCH_SIZE
         for batch in range(0, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
-            logger.info(f"Generating batch {batch // settings.BATCH_SIZE + 1} of {total_batches} for sequence_id: {sequence_id}")
-            batch_emails = openai_service.generate_email_sequence(
-                sequence.topic, 
-                sequence.inputs, 
-                start_index=batch, 
-                batch_size=settings.BATCH_SIZE
-            )
-            emails.extend(batch_emails)
-            logger.info(f"Generated {len(batch_emails)} emails for batch {batch // settings.BATCH_SIZE + 1}")
-            sequence_service.update_sequence_progress(db, sequence_id, len(emails))
-            logger.info(f"Updated sequence progress: {len(emails)}/{settings.SEQUENCE_LENGTH} emails")
+            logger.info(f"Generating batch {batch // settings.BATCH_SIZE + 1} of {(settings.SEQUENCE_LENGTH + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE} for sequence_id: {sequence_id}")
+            try:
+                batch_emails = await asyncio.wait_for(
+                    openai_service.generate_email_sequence(
+                        sequence.topic,
+                        sequence.inputs,
+                        batch,
+                        min(settings.BATCH_SIZE, settings.SEQUENCE_LENGTH - batch)
+                    ),
+                    timeout=150  # 2.5 minutes timeout
+                )
+                emails.extend(batch_emails)
+            except TimeoutError:
+                logger.error(f"Timeout occurred while generating batch {batch // settings.BATCH_SIZE + 1} for sequence_id: {sequence_id}")
+                # Handle the timeout (e.g., skip this batch or use a fallback)
+                continue
 
         logger.info(f"Email generation complete for sequence_id: {sequence_id}. Finalizing sequence.")
         sequence_service.finalize_sequence(db, sequence_id, emails)

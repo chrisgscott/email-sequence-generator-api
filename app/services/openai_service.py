@@ -91,7 +91,7 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int
             top_p=settings.OPENAI_TOP_P,
             frequency_penalty=settings.OPENAI_FREQUENCY_PENALTY,
             presence_penalty=settings.OPENAI_PRESENCE_PENALTY,
-            timeout=60
+            timeout=120  # Increase timeout to 120 seconds
         )
         
         logger.info(f"Received response from OpenAI API for emails {start_index + 1} to {start_index + batch_size}")
@@ -122,6 +122,9 @@ def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int
     except openai.error.APIError as e:
         logger.error(f"OpenAI API error for batch starting at {start_index}: {str(e)}")
         raise AppException(f"OpenAI API error: {str(e)}", status_code=500)
+    except openai.error.RateLimitError as e:
+        logger.error(f"OpenAI API rate limit exceeded for batch starting at {start_index}: {str(e)}")
+        raise AppException("OpenAI API rate limit exceeded. Please try again later.", status_code=429)
     except Exception as e:
         logger.error(f"Unexpected error in generate_email_sequence for batch starting at {start_index}: {str(e)}")
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)

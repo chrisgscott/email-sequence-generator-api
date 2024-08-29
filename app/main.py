@@ -53,4 +53,4 @@ app.add_event_handler("shutdown", scheduler.shutdown)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8080, reload=True, timeout_keep_alive=120)
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, workers=8, timeout_keep_alive=120)
