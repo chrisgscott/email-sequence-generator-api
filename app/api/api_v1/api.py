@@ -15,7 +15,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 @router.post("/webhook")
-async def webhook(request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+async def webhook(request: Request, background_tasks: BackgroundTasks):
     logger.info("Webhook endpoint hit")
     try:
         raw_data = await request.body()
@@ -47,20 +47,23 @@ async def webhook(request: Request, background_tasks: BackgroundTasks, db: Sessi
             recipient_email=recipient_email
         )
 
-        # Create a placeholder sequence in the database
-        db_sequence = sequence_service.create_empty_sequence(db, sequence)
+        # Create a database session
+        db = SessionLocal()
+        try:
+            # Create a placeholder sequence in the database
+            db_sequence = sequence_service.create_empty_sequence(db, sequence)
 
-        # Start the email generation as a background task
-        background_tasks.add_task(generate_and_store_email_sequence, db_sequence.id, sequence)
+            # Start the email generation as a background task
+            background_tasks.add_task(generate_and_store_email_sequence, db_sequence.id, sequence)
 
-        logger.info("Webhook processed successfully")
-        return {"message": "Email sequence generation started", "sequence_id": db_sequence.id}
-    except ValueError as ve:
-        logger.error(f"Validation error in webhook: {str(ve)}")
-        raise HTTPException(status_code=400, detail=str(ve))
+            logger.info("Webhook processed successfully")
+            return {"message": "Webhook processed successfully", "sequence_id": db_sequence.id}
+        finally:
+            db.close()
+
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
     db = SessionLocal()
