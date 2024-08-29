@@ -35,9 +35,9 @@ def send_email(to_email: str, email_content: EmailContent, inputs: dict):
         **inputs
     }
     
-    # Ensure the scheduled_for date is in the future
     current_time = datetime.now(timezone.utc)
-    scheduled_at = max(email_content.scheduled_for, current_time + timedelta(minutes=5))
+    max_schedule_time = current_time + timedelta(days=3)
+    scheduled_at = min(max(email_content.scheduled_for, current_time + timedelta(minutes=5)), max_schedule_time)
     scheduled_at_str = scheduled_at.astimezone(pytz.UTC).isoformat()
     
     try:
@@ -122,22 +122,22 @@ def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict
 def check_and_schedule_emails():
     db = SessionLocal()
     try:
-        current_date = datetime.now(timezone.utc).date()
-        next_30_days = current_date + timedelta(days=30)
+        current_date = datetime.now(timezone.utc)
+        next_3_days = current_date + timedelta(days=3)
         
         sequences = db.query(Sequence).filter(
             Sequence.is_active == True,
-            Sequence.next_email_date <= next_30_days
+            Sequence.next_email_date <= next_3_days
         ).all()
         
         for sequence in sequences:
-            emails_to_schedule = [email for email in sequence.emails if not email.sent_to_brevo and email.scheduled_for <= next_30_days]
+            emails_to_schedule = [email for email in sequence.emails if not email.sent_to_brevo and email.scheduled_for <= next_3_days]
             
             for email in emails_to_schedule:
                 try:
                     api_response = send_email(sequence.recipient_email, email, sequence.inputs)
                     email.sent_to_brevo = True
-                    email.sent_to_brevo_at = datetime.now(timezone.utc)
+                    email.sent_to_brevo_at = current_date
                     email.brevo_message_id = api_response.message_id
                     db.commit()
                     logger.info(f"Scheduled email {email.id} for sequence {sequence.id}")
@@ -145,6 +145,7 @@ def check_and_schedule_emails():
                     logger.error(f"Error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
                     db.rollback()
             
+            # Update next_email_date to the earliest unsent email, even if it's beyond 3 days
             sequence.next_email_date = min((email.scheduled_for for email in sequence.emails if not email.sent_to_brevo), default=None)
             db.commit()
         
