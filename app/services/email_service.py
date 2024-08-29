@@ -22,37 +22,46 @@ configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = settings.BREVO_API_KEY
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def send_email(to_email: str, email_content: EmailContent, inputs: dict):
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = settings.BREVO_API_KEY
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-    
-    subject = email_content.subject
-    sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
-    to = [{"email": to_email}]
-    params = {
-        "subject": subject,
-        **email_content.content,
-        **inputs
-    }
-    
-    current_time = datetime.now(TIMEZONE)
-    max_schedule_time = current_time + timedelta(days=3)
-    scheduled_at = min(max(email_content.scheduled_for, current_time + timedelta(minutes=5)), max_schedule_time)
-    scheduled_at_str = scheduled_at.isoformat()  # It's already in UTC, so we don't need to convert
-    
+def send_email(recipient_email: str, email_content: EmailContent, inputs: Dict[str, str]):
     try:
-        api_response = api_instance.send_transac_email({
-            "templateId": settings.BREVO_EMAIL_TEMPLATE_ID,
-            "to": to,
-            "params": params,
-            "scheduledAt": scheduled_at_str
-        })
-        logger.info(f"Email scheduled with Brevo for {scheduled_at_str}. Message ID: {api_response.message_id}")
+        logger.info(f"Preparing to send email to {recipient_email}")
+        
+        # Create an instance of the API class
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        
+        # Prepare the email data
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": recipient_email}],
+            template_id=settings.BREVO_EMAIL_TEMPLATE_ID,
+            params={
+                "subject": email_content.subject,
+                **email_content.content,
+                **inputs
+            },
+            headers={
+                "X-Mailin-custom": "custom_header_1:custom_value_1|custom_header_2:custom_value_2"
+            }
+        )
+        
+        logger.info(f"Sending email with subject: {email_content.subject}")
+        
+        # Make the API call
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        
+        logger.info(f"Email sent successfully. Message ID: {api_response.message_id}")
         return api_response
+
     except ApiException as e:
-        logger.error(f"Exception when calling SMTPApi->send_transac_email: {e}")
-        raise
+        logger.error(f"Exception when calling Brevo API: {e}")
+        raise AppException(f"Brevo API error: {str(e)}", status_code=500)
+    except TypeError as e:
+        logger.error(f"TypeError when preparing or sending email: {e}")
+        logger.error(f"Email content: {email_content}")
+        logger.error(f"Inputs: {inputs}")
+        raise AppException(f"Error preparing email data: {str(e)}", status_code=500)
+    except Exception as e:
+        logger.error(f"Unexpected error when sending email: {e}")
+        raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
 def check_and_send_scheduled_emails():
     db = SessionLocal()
@@ -153,8 +162,11 @@ def check_and_schedule_emails():
                         logger.info(f"Scheduled email {email.id} for sequence {sequence.id}")
                     else:
                         logger.warning(f"Email {email.id} for sequence {sequence.id} already sent to Brevo")
+                except AppException as e:
+                    logger.error(f"AppException scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
+                    db.rollback()
                 except Exception as e:
-                    logger.error(f"Error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
+                    logger.error(f"Unexpected error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
                     db.rollback()
             
             sequence.next_email_date = min((email.scheduled_for for email in sequence.emails if not email.sent_to_brevo), default=None)
