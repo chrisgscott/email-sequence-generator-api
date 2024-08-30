@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.sequence import Sequence
 from app.models.email import Email
-from app.schemas.sequence import SequenceCreate, EmailContent, EmailBase
+from app.schemas.sequence import SequenceCreate, EmailContent, EmailBase, EmailSection
 from typing import List
 from sqlalchemy.exc import SQLAlchemyError
 from app.core.exceptions import AppException

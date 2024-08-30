@@ -1,6 +1,6 @@
 import openai
 from app.core.config import settings, TIMEZONE
-from app.schemas.sequence import EmailContent as EmailBase
+from app.schemas.sequence import EmailSection, EmailBase
 from typing import List, Dict
 from datetime import datetime, timedelta
 import json
