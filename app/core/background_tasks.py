@@ -4,6 +4,7 @@ from app.db.database import SessionLocal
 from app.models.sequence import Sequence
 from app.schemas.sequence import SequenceCreate
 from app.services import sequence_service
+from app.services.sequence_generation import generate_and_store_email_sequence
 from loguru import logger
 
 class SubmissionQueue(BaseModel):
