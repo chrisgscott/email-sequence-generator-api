@@ -1,6 +1,6 @@
 import multiprocessing
 
-workers = 4
+workers = 6
 bind = "0.0.0.0:8080"
 worker_class = "uvicorn.workers.UvicornWorker"
 accesslog = "-"
