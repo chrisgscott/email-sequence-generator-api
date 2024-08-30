@@ -14,9 +14,14 @@ from loguru import logger
 from app.core.exceptions import AppException
 from app.models.sequence import Sequence
 import asyncio
+from asyncio import Queue
+from app.core.background_tasks import process_submission_queue, SubmissionQueue
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+submission_queue = Queue()
+queue_processor_running = False
 
 @router.post("/webhook")
 async def webhook(request: Request, background_tasks: BackgroundTasks):
@@ -37,28 +42,20 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         if not all([topic, recipient_email, inputs]):
             raise AppException("Missing required fields in webhook data", status_code=400)
         
-        # Create a SequenceCreate object
-        sequence_create = SequenceCreate(topic=topic, recipient_email=recipient_email, inputs=inputs)
+        # Create a SubmissionQueue object
+        submission = SubmissionQueue(topic=topic, recipient_email=recipient_email, inputs=inputs)
         
-        # Create the sequence in the database
-        db = SessionLocal()
-        try:
-            db_sequence = Sequence(topic=topic, recipient_email=recipient_email, inputs=inputs)
-            db.add(db_sequence)
-            db.commit()
-            db.refresh(db_sequence)
-            sequence_id = db_sequence.id
-        except Exception as e:
-            logger.error(f"Error creating sequence in database: {str(e)}")
-            raise AppException("Error creating sequence", status_code=500)
-        finally:
-            db.close()
+        # Add submission to the queue
+        await submission_queue.put(submission)
         
-        # Start the email sequence generation process in the background
-        background_tasks.add_task(generate_and_store_email_sequence, sequence_id, sequence_create, background_tasks)
+        # Start the queue processor if it's not already running
+        global queue_processor_running
+        if not queue_processor_running:
+            background_tasks.add_task(process_submission_queue, submission_queue)
+            queue_processor_running = True
         
         logger.info("Webhook processed successfully")
-        return {"message": "Webhook processed successfully", "sequence_id": sequence_id}
+        return {"message": "Submission queued successfully"}
     except AppException as e:
         logger.error(f"AppException in webhook: {str(e)}")
         raise
@@ -66,7 +63,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
-async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate, background_tasks: BackgroundTasks):
+async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
     db = SessionLocal()
     try:
@@ -225,7 +222,7 @@ async def retry_sequence_generation(sequence_id: int, background_tasks: Backgrou
             raise AppException("Sequence is not in a retryable state", status_code=400)
         
         sequence_create = SequenceCreate(topic=sequence.topic, recipient_email=sequence.recipient_email, inputs=sequence.inputs)
-        background_tasks.add_task(generate_and_store_email_sequence, sequence_id, sequence_create, background_tasks)
+        background_tasks.add_task(generate_and_store_email_sequence, sequence_id, sequence_create)
         
         return SequenceResponse(id=sequence.id, status="retrying")
     except AppException:
