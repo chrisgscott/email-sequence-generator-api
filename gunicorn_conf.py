@@ -1,6 +1,6 @@
 import multiprocessing
 
-workers = min((multiprocessing.cpu_count() * 2) + 1, 6)  # Cap at 6 workers
+workers = min(multiprocessing.cpu_count() * 2, 4)  # Cap at 4 workers
 bind = "0.0.0.0:8080"
 worker_class = "uvicorn.workers.UvicornWorker"
 accesslog = "-"
