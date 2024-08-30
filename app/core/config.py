@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings
 from typing import List
 from datetime import timezone
 from app.core.prompts import EMAIL_PROMPT, SECTIONS_PROMPT, SUBJECT_PROMPT
+import os
 
 class EmailSection(BaseSettings):
     """
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
     # API Keys and Authentication
     OPENAI_API_KEY: str  # API key for OpenAI services
     DATABASE_URL: str  # Connection string for the database
-    BREVO_API_KEY: str  # API key for Brevo email service
+    BREVO_API_KEY: str = os.getenv("BREVO_API_KEY")  # API key for Brevo email service
     BREVO_EMAIL_TEMPLATE_ID: int  # ID of the email template in Brevo
 
     # OpenAI Model Configuration
