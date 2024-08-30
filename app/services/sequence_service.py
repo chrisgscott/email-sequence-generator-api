@@ -9,31 +9,16 @@ from loguru import logger
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import func
 
-def create_sequence(db: Session, sequence: SequenceCreate, emails: list[EmailContent]):
+def create_sequence(db: Session, sequence: SequenceCreate):
     db_sequence = Sequence(
+        form_id=sequence.form_id,
         topic=sequence.topic,
-        inputs=sequence.inputs,
         recipient_email=sequence.recipient_email,
-    )
-    
-    for email_content in emails:
-        db_email = Email(
-            subject=email_content.subject,
-            content=email_content.content,
-            scheduled_for=email_content.scheduled_for
-        )
-        db_sequence.emails.append(db_email)
-    
-    db.add(db_sequence)
-    db.commit()
-    db.refresh(db_sequence)
-    return db_sequence
-
-def create_empty_sequence(db: Session, sequence: SequenceCreate):
-    db_sequence = Sequence(
-        topic=sequence.topic,
+        brevo_list_id=sequence.brevo_list_id,
+        total_emails=sequence.total_emails,
+        days_between_emails=sequence.days_between_emails,
+        email_structure=sequence.email_structure,
         inputs=sequence.inputs,
-        recipient_email=sequence.recipient_email,
         status="generating",
         progress=0
     )
@@ -41,6 +26,9 @@ def create_empty_sequence(db: Session, sequence: SequenceCreate):
     db.commit()
     db.refresh(db_sequence)
     return db_sequence
+
+def create_empty_sequence(db: Session, sequence: SequenceCreate):
+    return create_sequence(db, sequence)
 
 def update_sequence_progress(db: Session, sequence_id: int, progress: int):
     db_sequence = db.query(Sequence).filter(Sequence.id == sequence_id).first()
@@ -104,3 +92,10 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
 
 def get_sequence(db: Session, sequence_id: int) -> Sequence:
     return db.query(Sequence).filter(Sequence.id == sequence_id).first()
+
+def get_existing_sequence(db: Session, topic: str, recipient_email: str, inputs: dict) -> Sequence:
+    return db.query(Sequence).filter(
+        Sequence.topic == topic,
+        Sequence.recipient_email == recipient_email,
+        Sequence.inputs == inputs
+    ).first()

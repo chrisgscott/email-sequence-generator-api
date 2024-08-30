@@ -4,12 +4,6 @@ Last updated: 2024-08-30
 
 ## High Priority Tasks
 
-### Handle Large Email Sequences and OpenAI Token Limits
-- [ ] Ensure batch size and other relevant settings are configurable and documented
-
-### Idempotency
-- [ ] Ensure webhook endpoint can handle duplicate requests without creating multiple sequences
-
 ### Unsubscribe Mechanism
 - [ ] Implement handling of unsubscribe requests in your system
 - [ ] Create a custom unsubscribe page or process (if desired)
@@ -29,9 +23,6 @@ Last updated: 2024-08-30
 ### Refactor Existing Code to Support Multiple Generators
 - [ ] Extract generator-specific logic into separate modules
 - [ ] Create a shared interface for all generators
-
-### Brevo API Integration Improvements
-- [ ] Implement a system to queue emails beyond the 3-day window
 
 ### OpenAI Integration Enhancements
 - [ ] Add fallback mechanisms for OpenAI API failures
@@ -201,6 +192,8 @@ Last updated: 2024-08-30
 
 ## Completed Items
 
+- [x] Ensure webhook endpoint can handle duplicate requests without creating multiple sequences
+- [x] Ensure batch size and other relevant settings are configurable and documented
 - [x] Set up a background task scheduler (APScheduler)
 - [x] Create a periodic task to check for emails due to be sent
 - [x] Implement the actual sending of emails using the Brevo API
@@ -226,3 +219,37 @@ Last updated: 2024-08-30
 
 - This roadmap is subject to change based on user feedback, business priorities, and available resources.
 - Regular reviews and updates to this roadmap are recommended to ensure it remains aligned with project goals.
+
+## Multi-Generator System and Management Interface
+
+### Backend Infrastructure
+- [ ] Design a standardized configuration format for generators
+- [ ] Implement dynamic routing for generator-specific webhooks
+- [ ] Develop a system to load and initialize generators at runtime
+- [ ] Extract generator-specific logic into separate modules
+- [ ] Create a shared interface for all generators
+
+### Generator Management Frontend
+- [ ] Design and implement a user interface for creating new generators
+  - [ ] Form for inputting generator configuration (name, description, prompt templates, etc.)
+  - [ ] Interface for setting up custom fields for the generator's webhook
+- [ ] Develop an interface for editing existing generators
+  - [ ] Allow updating of all generator settings
+  - [ ] Implement version control for generator configurations
+- [ ] Create a dashboard for monitoring generator performance
+  - [ ] Display usage statistics, error rates, and other relevant metrics
+- [ ] Implement a system for testing generators before deployment
+  - [ ] Allow for sample runs with test data
+  - [ ] Provide feedback on potential issues or improvements
+- [ ] Add functionality to enable/disable generators
+- [ ] Develop a simple interface for deleting generators (with appropriate safeguards)
+- [ ] Implement user roles and permissions for generator management
+
+### Migration and Maintenance
+- [ ] Create tools to help migrate existing standalone generators to the new system
+- [ ] Create a changelog system to track modifications to generators over time
+
+### Testing and Documentation
+- [ ] Develop comprehensive test suites for the multi-generator system
+- [ ] Create documentation for creating and managing generators
+- [ ] Update API documentation to reflect the multi-generator architecture

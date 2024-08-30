@@ -15,10 +15,10 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         if not db_sequence:
             raise AppException(f"Sequence {sequence_id} not found", status_code=404)
 
-        total_batches = (settings.SEQUENCE_LENGTH + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE
+        total_batches = (sequence.total_emails + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE
         start_batch = db_sequence.progress * total_batches // 100
 
-        for batch in range(start_batch * settings.BATCH_SIZE, settings.SEQUENCE_LENGTH, settings.BATCH_SIZE):
+        for batch in range(start_batch * settings.BATCH_SIZE, sequence.total_emails, settings.BATCH_SIZE):
             batch_number = batch // settings.BATCH_SIZE + 1
             logger.info(f"Generating batch {batch_number} of {total_batches} for sequence_id: {sequence_id}")
             try:
@@ -26,8 +26,10 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                     openai_service.generate_email_sequence(
                         sequence.topic,
                         sequence.inputs,
+                        sequence.email_structure,
                         batch,
-                        min(settings.BATCH_SIZE, settings.SEQUENCE_LENGTH - batch),
+                        min(settings.BATCH_SIZE, sequence.total_emails - batch),
+                        sequence.days_between_emails,
                         buffer_time=timedelta(hours=1)
                     ),
                     timeout=180  # 3 minutes timeout
@@ -60,7 +62,6 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         logger.info(f"Sequence finalized for sequence_id: {sequence_id}")
         db.commit()
     except AppException:
-        # Re-raise AppExceptions as they are already handled
         raise
     except Exception as e:
         logger.error(f"Unexpected error generating email sequence for sequence_id: {sequence_id}: {str(e)}")

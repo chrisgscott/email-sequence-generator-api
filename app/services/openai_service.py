@@ -35,15 +35,14 @@ openai_limiter = RateLimiter(max_calls=60, period=60)
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_index: int, batch_size: int, buffer_time: timedelta = timedelta(hours=1)) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1)) -> List[EmailBase]:
     sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
         index=i+1, 
         name=section.name, 
-        description=section.description, 
         word_count=section.word_count
-    ) for i, section in enumerate(settings.EMAIL_SECTIONS)])
+    ) for i, section in enumerate(email_structure)])
     
-    subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(settings.EMAIL_SECTIONS) + 1)
+    subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(email_structure) + 1)
     
     prompt = settings.OPENAI_EMAIL_PROMPT.format(
         start_index=start_index + 1,
@@ -66,7 +65,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
                         "subject": {"type": "string"},
                         "content": {
                             "type": "object",
-                            "properties": {section.name: {"type": "string"} for section in settings.EMAIL_SECTIONS}
+                            "properties": {section.name: {"type": "string"} for section in email_structure}
                         }
                     },
                     "required": ["subject", "content"]
@@ -114,7 +113,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
                 logger.error(f"Missing 'content' key in email {start_index + i + 1}")
                 email['content'] = {}
             
-            for section in settings.EMAIL_SECTIONS:
+            for section in email_structure:
                 if section.name not in email['content']:
                     logger.warning(f"Content for {section.name} was not generated in email {start_index + i + 1}")
                     email['content'][section.name] = f"Content for {section.name} was not generated."
@@ -123,15 +122,15 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], start_inde
                 logger.error(f"Missing 'subject' key in email {start_index + i + 1}")
                 email['subject'] = f"Email {start_index + i + 1}"
 
-            scheduled_for = current_date + timedelta(days=(start_index + i) * settings.SEQUENCE_FREQUENCY_DAYS)
+            scheduled_for = current_date + timedelta(days=(start_index + i) * days_between_emails)
             
             processed_emails.append(EmailBase(
                 subject=email['subject'],
                 content=email['content'],
                 scheduled_for=scheduled_for
             ))
-        
-        logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)} out of {settings.SEQUENCE_LENGTH}")
+
+        logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)}")
         return processed_emails
     except KeyError as e:
         logger.error(f"KeyError in OpenAI response for batch starting at {start_index}: {str(e)}")
