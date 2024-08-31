@@ -20,7 +20,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             index=i+1, 
             name=section.name, 
             description=section.description,
-            word_count=section.word_count
+            word_count=section.word_count if isinstance(section.word_count, str) else f"{section.word_count}"
         ) for i, section in enumerate(email_structure)])
     
         subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(email_structure) + 1)

@@ -1,11 +1,24 @@
-from pydantic import BaseModel, Field, EmailStr
-from typing import Dict, List, Optional, Any
+from pydantic import BaseModel, Field, EmailStr, validator
+from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
 
 class EmailSection(BaseModel):
     name: str
-    word_count: int
+    word_count: Union[int, str]
     description: str
+
+    @validator('word_count')
+    def validate_word_count(cls, v):
+        if isinstance(v, int):
+            return v
+        if isinstance(v, str):
+            if '-' in v:
+                min_count, max_count = map(str.strip, v.split('-'))
+                if min_count.isdigit() and max_count.isdigit():
+                    return v
+            elif v.isdigit():
+                return int(v)
+        raise ValueError('word_count must be an integer or a range (e.g., "75 - 150")')
 
 class EmailBase(BaseModel):
     subject: str
