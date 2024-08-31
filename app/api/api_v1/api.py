@@ -71,6 +71,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         
         # Queue the sequence generation
         background_tasks.add_task(sequence_service.generate_and_store_email_sequence, sequence_id, sequence_create)
+        
         # Subscribe to Brevo list
         background_tasks.add_task(brevo_service.subscribe_to_brevo_list, recipient_email, brevo_list_id)
         

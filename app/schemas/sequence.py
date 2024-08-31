@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 class EmailSection(BaseModel):
@@ -17,12 +17,12 @@ class EmailContent(EmailBase):
 class SequenceCreate(BaseModel):
     form_id: str
     topic: str
-    recipient_email: EmailStr
+    recipient_email: str
     brevo_list_id: int
     total_emails: int
     days_between_emails: int
     email_structure: List[EmailSection]
-    inputs: Dict[str, str]
+    inputs: Dict[str, Any]
 
 class SequenceResponse(BaseModel):
     id: int
