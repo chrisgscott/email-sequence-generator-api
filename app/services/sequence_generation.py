@@ -31,7 +31,8 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         batch,
                         min(settings.BATCH_SIZE, sequence.total_emails - batch),
                         sequence.days_between_emails,
-                        previous_topics=previous_topics
+                        previous_topics=previous_topics,
+                        topic_depth=sequence.topic_depth
                     ),
                     timeout=settings.OPENAI_REQUEST_TIMEOUT
                 )

@@ -24,6 +24,7 @@ class SequenceCreate(BaseModel):
     days_between_emails: int
     email_structure: List[EmailSection]
     inputs: Dict[str, Any]
+    topic_depth: int = Field(default=5, ge=1, le=10)
 
 class SequenceResponse(BaseModel):
     id: int

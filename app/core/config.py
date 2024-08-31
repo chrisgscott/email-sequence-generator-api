@@ -55,12 +55,14 @@ class Settings(BaseSettings):
     OPENAI_REQUEST_TIMEOUT: int = 180  # Timeout for OpenAI API requests in seconds
 
     # OpenAI Prompt Settings
-    OPENAI_EMAIL_PROMPT: ClassVar[str] = """Generate {batch_size} unique emails for an email sequence about {topic}. Each email should be different and cover a unique aspect of the topic. Do not repeat information or topics from previous emails.
+    OPENAI_EMAIL_PROMPT: ClassVar[str] = """Generate {batch_size} unique emails for an email sequence about {topic}. Each email should be different and cover aspects of the topic according to the depth setting.
+
+{depth_instruction}
 
 Previously covered topics:
 {previous_topics}
 
-Please avoid these topics and generate new, unique content for each email.
+Please consider these topics and generate content according to the depth setting.
 
 Use the following inputs to personalize the content:
 {inputs}

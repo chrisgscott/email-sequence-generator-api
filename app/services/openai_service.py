@@ -14,7 +14,7 @@ openai.api_key = settings.OPENAI_API_KEY
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1), previous_topics: Dict[str, int] = {}) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1), previous_topics: Dict[str, int] = {}, topic_depth: int = 5) -> List[EmailBase]:
     try:
         sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
             index=i+1, 
@@ -26,6 +26,15 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(email_structure) + 1)
         
         previous_topics_str = "\n".join([f"- {topic} (covered {depth} time{'s' if depth > 1 else ''})" for topic, depth in previous_topics.items()])
+        
+        depth_instruction = f"Depth setting: {topic_depth}/10. "
+        if topic_depth < 4:
+            depth_instruction += "Focus on broad topics without much repetition across emails."
+        elif topic_depth < 7:
+            depth_instruction += "Balance between broad topics and some deeper dives into subtopics."
+        else:
+            depth_instruction += "Create in-depth emails that can cover multiple facets of core topics."
+
         prompt = settings.OPENAI_EMAIL_PROMPT.format(
             start_index=start_index + 1,
             end_index=start_index + batch_size,
@@ -34,7 +43,8 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             sections_prompt=sections_prompt,
             subject_prompt=subject_prompt,
             batch_size=batch_size,
-            previous_topics=previous_topics_str
+            previous_topics=previous_topics_str,
+            depth_instruction=depth_instruction
         )
 
         json_structure = {
