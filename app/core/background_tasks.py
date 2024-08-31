@@ -17,6 +17,7 @@ class SubmissionQueue(BaseModel):
     days_between_emails: int
     email_structure: List[EmailSection]
     inputs: dict
+    topic_depth: int
 
 async def process_submission_queue(queue: Queue):
     while True:
