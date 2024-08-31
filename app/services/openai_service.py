@@ -166,7 +166,7 @@ def validate_email_content(email, email_structure):
     return 'subject' in email and email['subject'].strip()
 
 # Add this after line 88
-for email in emails_data:
-    if not validate_email_content(email, email_structure):
-        logger.error(f"Invalid email content structure: {email}")
-        raise AppException("Invalid email content structure in OpenAI API response", status_code=500)
+# for email in emails_data:
+#    if not validate_email_content(email, email_structure):
+#        logger.error(f"Invalid email content structure: {email}")
+#        raise AppException("Invalid email content structure in OpenAI API response", status_code=500)
