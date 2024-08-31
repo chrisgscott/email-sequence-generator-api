@@ -56,7 +56,7 @@ class Settings(BaseSettings):
 
     # OpenAI Prompt Settings
     OPENAI_EMAIL_PROMPT: str = EMAIL_PROMPT  # Main prompt for generating email content
-    OPENAI_SECTIONS_PROMPT: str = SECTIONS_PROMPT  # Prompt for generating individual email sections
+    OPENAI_SECTIONS_PROMPT: str = "Section {index}: {name}\nDescription: {description}\nWord Count: {word_count}"  # Prompt for generating individual email sections
     OPENAI_SUBJECT_PROMPT: str = SUBJECT_PROMPT  # Prompt for generating email subject lines
 
     class Config:

@@ -45,6 +45,15 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             raise AppException("Invalid email_structure format", status_code=400)
         
         # Create SequenceCreate object
+        email_structure = [
+            EmailSection(
+                name=section['name'],
+                word_count=section['word_count'],
+                description=section.get('description', f"Content for {section['name']}")  # Provide a default description if not present
+            )
+            for section in data['email_structure']
+        ]
+        
         sequence_create = SequenceCreate(
             form_id=form_id,
             topic=topic,
@@ -52,7 +61,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             brevo_list_id=brevo_list_id,
             total_emails=sequence_settings['total_emails'],
             days_between_emails=sequence_settings['days_between_emails'],
-            email_structure=[EmailSection(**section) for section in email_structure],
+            email_structure=email_structure,
             inputs=inputs
         )
         

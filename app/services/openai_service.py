@@ -15,50 +15,51 @@ openai.api_key = settings.OPENAI_API_KEY
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1)) -> List[EmailBase]:
-    sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
-        index=i+1, 
-        name=section.name, 
-        word_count=section.word_count
-    ) for i, section in enumerate(email_structure)])
-    
-    subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(email_structure) + 1)
-    
-    prompt = settings.OPENAI_EMAIL_PROMPT.format(
-        start_index=start_index + 1,
-        end_index=start_index + batch_size,
-        topic=topic,
-        inputs=json.dumps(inputs),
-        sections_prompt=sections_prompt,
-        subject_prompt=subject_prompt,
-        batch_size=batch_size
-    )
-
-    json_structure = {
-        "type": "object",
-        "properties": {
-            "emails": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "subject": {"type": "string"},
-                        "content": {
-                            "type": "object",
-                            "properties": {section.name: {"type": "string"} for section in email_structure}
-                        }
-                    },
-                    "required": ["subject", "content"]
-                }
-            }
-        },
-        "required": ["emails"]
-    }
-    
-    logger.info(f"Sending request to OpenAI API for emails {start_index + 1} to {start_index + batch_size}")
-    logger.info(f"Full prompt being sent to OpenAI:\n{prompt}")
-    logger.info(f"JSON structure for function call:\n{json.dumps(json_structure, indent=2)}")
-    
     try:
+        sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
+            index=i+1, 
+            name=section.name, 
+            description=section.description,
+            word_count=section.word_count
+        ) for i, section in enumerate(email_structure)])
+    
+        subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(email_structure) + 1)
+        
+        prompt = settings.OPENAI_EMAIL_PROMPT.format(
+            start_index=start_index + 1,
+            end_index=start_index + batch_size,
+            topic=topic,
+            inputs=json.dumps(inputs),
+            sections_prompt=sections_prompt,
+            subject_prompt=subject_prompt,
+            batch_size=batch_size
+        )
+
+        json_structure = {
+            "type": "object",
+            "properties": {
+                "emails": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "subject": {"type": "string"},
+                            "content": {
+                                "type": "object",
+                                "properties": {section.name: {"type": "string"} for section in email_structure}
+                            }
+                        },
+                        "required": ["subject", "content"]
+                    }
+                }
+            },
+            "required": ["emails"]
+        }
+        
+        logger.info(f"Sending request to OpenAI API for emails {start_index + 1} to {start_index + batch_size}")
+        logger.info(f"Full prompt being sent to OpenAI:\n{prompt}")
+        logger.info(f"JSON structure for function call:\n{json.dumps(json_structure, indent=2)}")
+        
         response: openai.ChatCompletion = await openai.ChatCompletion.acreate(
             model=settings.OPENAI_MODEL,
             messages=[
