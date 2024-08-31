@@ -39,7 +39,8 @@ async def process_submission(submission: SubmissionQueue):
             total_emails=submission.total_emails,
             days_between_emails=submission.days_between_emails,
             email_structure=submission.email_structure,
-            inputs=submission.inputs
+            inputs=submission.inputs,
+            topic_depth=submission.topic_depth
         )
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         sequence_id = db_sequence.id
