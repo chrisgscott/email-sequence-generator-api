@@ -4,7 +4,7 @@ from datetime import datetime
 
 class EmailSection(BaseModel):
     name: str
-    word_count: str
+    word_count: int
     description: str
 
 class EmailBase(BaseModel):
