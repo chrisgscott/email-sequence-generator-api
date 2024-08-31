@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, ClassVar
 from datetime import timezone
 from app.core.prompts import EMAIL_PROMPT, SECTIONS_PROMPT, SUBJECT_PROMPT
 import os
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     OPENAI_REQUEST_TIMEOUT: int = 180  # Timeout for OpenAI API requests in seconds
 
     # OpenAI Prompt Settings
-    OPENAI_EMAIL_PROMPT = """Generate {batch_size} unique emails for an email sequence about {topic}. Each email should be different and cover a unique aspect of the topic. Do not repeat information or topics from previous emails.
+    OPENAI_EMAIL_PROMPT: ClassVar[str] = """Generate {batch_size} unique emails for an email sequence about {topic}. Each email should be different and cover a unique aspect of the topic. Do not repeat information or topics from previous emails.
 
 Previously covered topics:
 {previous_topics}
@@ -72,8 +72,8 @@ For each email, generate the following sections:
 
 Return the result as a JSON array with {batch_size} items.
 """
-    OPENAI_SECTIONS_PROMPT: str = "Section {index}: {name}\nDescription: {description}\nWord Count: {word_count}"  # Prompt for generating individual email sections
-    OPENAI_SUBJECT_PROMPT: str = SUBJECT_PROMPT  # Prompt for generating email subject lines
+    OPENAI_SECTIONS_PROMPT: ClassVar[str] = "Section {index}: {name}\nDescription: {description}\nWord Count: {word_count}"  # Prompt for generating individual email sections
+    OPENAI_SUBJECT_PROMPT: ClassVar[str] = SUBJECT_PROMPT  # Prompt for generating email subject lines
 
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
