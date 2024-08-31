@@ -1,37 +1,16 @@
-import openai
-from app.core.config import settings, TIMEZONE
+from typing import List, Dict, Any
 from app.schemas.sequence import EmailSection, EmailBase
-from typing import List, Dict
-from datetime import datetime, timedelta
-import json
-from tenacity import retry, stop_after_attempt, wait_exponential
+from app.core.config import settings, TIMEZONE
 from app.core.exceptions import AppException
+from loguru import logger
+import openai
+import json
+from datetime import timedelta, datetime
+from tenacity import retry, stop_after_attempt, wait_exponential
+from app.core.rate_limiter import openai_limiter
 import time
-import logging
-
-logger = logging.getLogger(__name__)
 
 openai.api_key = settings.OPENAI_API_KEY
-
-class RateLimiter:
-    def __init__(self, max_calls, period):
-        self.max_calls = max_calls
-        self.period = period
-        self.calls = []
-
-    def __call__(self, func):
-        def wrapper(*args, **kwargs):
-            now = time.time()
-            self.calls = [call for call in self.calls if call > now - self.period]
-            if len(self.calls) >= self.max_calls:
-                sleep_time = self.calls[0] - (now - self.period)
-                time.sleep(sleep_time)
-            self.calls.append(time.time())
-            return func(*args, **kwargs)
-        return wrapper
-
-# Assuming 60 calls per minute for OpenAI API
-openai_limiter = RateLimiter(max_calls=60, period=60)
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
@@ -80,7 +59,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
     logger.info(f"JSON structure for function call:\n{json.dumps(json_structure, indent=2)}")
     
     try:
-        response = await openai.ChatCompletion.acreate(
+        response: openai.ChatCompletion = await openai.ChatCompletion.acreate(
             model=settings.OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that generates content for email sequences."},
@@ -132,6 +111,12 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
 
         logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)}")
         return processed_emails
+    except openai.error.APIError as e:
+        logger.error(f"OpenAI API error for batch starting at {start_index}: {str(e)}")
+        raise AppException(f"OpenAI API error: {str(e)}", status_code=500)
+    except openai.error.Timeout as e:
+        logger.error(f"OpenAI API timeout for batch starting at {start_index}: {str(e)}")
+        raise AppException(f"OpenAI API timeout: {str(e)}", status_code=504)
     except KeyError as e:
         logger.error(f"KeyError in OpenAI response for batch starting at {start_index}: {str(e)}")
         raise AppException(f"Invalid response structure from OpenAI API: {str(e)}", status_code=500)
