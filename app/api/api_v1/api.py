@@ -54,6 +54,8 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             for section in data['email_structure']
         ]
         
+        topic_depth = data.get("topic_depth", 5)  # Add this line after line 30
+        
         sequence_create = SequenceCreate(
             form_id=form_id,
             topic=topic,
@@ -62,7 +64,8 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             total_emails=sequence_settings['total_emails'],
             days_between_emails=sequence_settings['days_between_emails'],
             email_structure=email_structure,
-            inputs=inputs
+            inputs=inputs,
+            topic_depth=topic_depth  # Add this line
         )
         
         # Check for existing sequence
