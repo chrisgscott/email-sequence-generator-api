@@ -1,0 +1,48 @@
+curl -X POST https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook \
+-H "Content-Type: application/json" \
+-d @- << EOF
+{
+  "form_id": "test_form_123",
+  "topic": "Business Tips for Solopreneurs",
+  "recipient_email": "chrisgscott+biz@gmail.com",
+  "brevo_list_id": 2,
+  "sequence_settings": {
+    "total_emails": 365,
+    "days_between_emails": 1
+  },
+  "email_structure": [
+    {
+      "name": "Tip of the day",
+      "word_count": "100-250",
+      "description": "Introduce the business tip for the day"
+    },
+    {
+      "name": "Why It's Important",
+      "word_count": 150,
+      "description": "Explain the importance of implementing this tip into their business."
+    },
+    {
+      "name": "Things to consider",
+      "word_count": 75,
+      "description": "Additional considerations or tips related to the main tip"
+    },
+    {
+      "name": "Action Steps",
+      "word_count": "100-150",
+      "description": "Step-by-step instructions for implementing this tip into their business."
+    },
+    {
+      "name": "Wrap Up",
+      "word_count": 50,
+      "description": "Give a quick, encouraging glimpse of what their life or business will look like after this tip has been implemented."
+    }
+  ],
+  "inputs": {
+    "business_type": "Family Portrait Photographer",
+    "owner_name": "Chris",
+    "ideal_client": "Young, outdoor-loving families",
+    "areas_of_interest": "Client acquisition, marketing, email marketing, content marketing, SEO, sales, pricing, product selection, client workflow, referrals, repeat clients, conversion rate optimization, funnels, in-person sales, productivity, work-life balance, general business tips"
+  },
+  "topic_depth": 10
+}
+EOF

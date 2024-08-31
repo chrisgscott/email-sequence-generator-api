@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     # OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o-mini"  # The OpenAI model to use for generating email content
-    OPENAI_MAX_TOKENS: int = 4000  # Maximum number of tokens to generate in each API call
+    OPENAI_MAX_TOKENS: int = 12000  # Maximum number of tokens to generate in each API call
     OPENAI_TEMPERATURE: float = 0.7  # Controls randomness in generation (0.0 - 1.0)
     OPENAI_TOP_P: float = 1.0  # Controls diversity of word choices
     OPENAI_FREQUENCY_PENALTY: float = 0.0  # Reduces repetition of token sequences (-2.0 to 2.0)
