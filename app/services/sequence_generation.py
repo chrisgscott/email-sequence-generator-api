@@ -33,7 +33,7 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         sequence.days_between_emails,
                         previous_topics=previous_topics
                     ),
-                    timeout=settings.OPENAI_BATCH_TIMEOUT
+                    timeout=settings.OPENAI_REQUEST_TIMEOUT
                 )
                 
                 # Extract topics from generated emails
