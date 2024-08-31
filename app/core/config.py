@@ -55,7 +55,23 @@ class Settings(BaseSettings):
     OPENAI_REQUEST_TIMEOUT: int = 180  # Timeout for OpenAI API requests in seconds
 
     # OpenAI Prompt Settings
-    OPENAI_EMAIL_PROMPT: str = EMAIL_PROMPT  # Main prompt for generating email content
+    OPENAI_EMAIL_PROMPT = """Generate {batch_size} unique emails for an email sequence about {topic}. Each email should be different and cover a unique aspect of the topic. Do not repeat information or topics from previous emails.
+
+Previously covered topics:
+{previous_topics}
+
+Please avoid these topics and generate new, unique content for each email.
+
+Use the following inputs to personalize the content:
+{inputs}
+
+For each email, generate the following sections:
+{sections_prompt}
+
+{subject_prompt}
+
+Return the result as a JSON array with {batch_size} items.
+"""
     OPENAI_SECTIONS_PROMPT: str = "Section {index}: {name}\nDescription: {description}\nWord Count: {word_count}"  # Prompt for generating individual email sections
     OPENAI_SUBJECT_PROMPT: str = SUBJECT_PROMPT  # Prompt for generating email subject lines
 

@@ -14,7 +14,7 @@ openai.api_key = settings.OPENAI_API_KEY
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1)) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1), previous_topics: Dict[str, int] = {}) -> List[EmailBase]:
     try:
         sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
             index=i+1, 
@@ -25,6 +25,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
     
         subject_prompt = settings.OPENAI_SUBJECT_PROMPT.format(subject_index=len(email_structure) + 1)
         
+        previous_topics_str = "\n".join([f"- {topic} (covered {depth} time{'s' if depth > 1 else ''})" for topic, depth in previous_topics.items()])
         prompt = settings.OPENAI_EMAIL_PROMPT.format(
             start_index=start_index + 1,
             end_index=start_index + batch_size,
@@ -32,7 +33,8 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             inputs=json.dumps(inputs),
             sections_prompt=sections_prompt,
             subject_prompt=subject_prompt,
-            batch_size=batch_size
+            batch_size=batch_size,
+            previous_topics=previous_topics_str
         )
 
         json_structure = {
@@ -169,4 +171,4 @@ def validate_email_content(email, email_structure):
 # for email in emails_data:
 #    if not validate_email_content(email, email_structure):
 #        logger.error(f"Invalid email content structure: {email}")
-#        raise AppException("Invalid email content structure in OpenAI API response", status_code=500)
+#        raise AppException("

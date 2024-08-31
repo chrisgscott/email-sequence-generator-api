@@ -10,6 +10,7 @@ from app.services import sequence_service, openai_service
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
     db = SessionLocal()
+    previous_topics = []
     try:
         db_sequence = sequence_service.get_sequence(db, sequence_id)
         if not db_sequence:
@@ -30,10 +31,15 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         batch,
                         min(settings.BATCH_SIZE, sequence.total_emails - batch),
                         sequence.days_between_emails,
-                        buffer_time=timedelta(hours=1)
+                        previous_topics=previous_topics
                     ),
-                    timeout=180  # 3 minutes timeout
+                    timeout=settings.OPENAI_BATCH_TIMEOUT
                 )
+                
+                # Extract topics from generated emails
+                new_topics = [email.subject for email in batch_emails]
+                previous_topics.extend(new_topics)
+
                 sequence_service.add_emails_to_sequence(db, sequence_id, batch_emails)
                 logger.info(f"Saved batch {batch_number} to database for sequence_id: {sequence_id}")
                 
