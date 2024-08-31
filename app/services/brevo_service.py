@@ -15,5 +15,9 @@ def subscribe_to_brevo_list(email: str, list_id: int):
         logger.info(f"Contact {email} successfully subscribed to Brevo list {list_id}")
         return api_response
     except ApiException as e:
-        logger.error(f"Exception when calling ContactsApi->create_contact: {e}")
-        raise
+        if e.status == 400 and "Contact already exist" in str(e):
+            logger.info(f"Contact {email} already exists in Brevo list {list_id}")
+            return None
+        else:
+            logger.error(f"Exception when calling ContactsApi->create_contact: {e}")
+            raise
