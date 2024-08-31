@@ -29,11 +29,11 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         
         depth_instruction = f"Depth setting: {topic_depth}/10. "
         if topic_depth < 4:
-            depth_instruction += "Focus on broad topics without much repetition across emails."
+            depth_instruction += "Focus on broad topics without repeating any topics across emails."
         elif topic_depth < 7:
             depth_instruction += "Balance between broad topics and some deeper dives into subtopics."
         else:
-            depth_instruction += "Create in-depth emails that can cover multiple facets of core topics."
+            depth_instruction += "Each email you create should cover a single specific and deep facet or subtopic of the core, overarching topics within our subject. Since we have a lot of emails to create for this sequence, really dive deep into the nitty-gritty details of a core topic in each email, being careful to not cover the same exact subtopics across emails within the sequence. This allows us to create vast sequences that cover all aspects of our topic without repetition across the sequence of emails."
 
         prompt = settings.OPENAI_EMAIL_PROMPT.format(
             start_index=start_index + 1,
