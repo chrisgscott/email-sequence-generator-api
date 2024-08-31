@@ -40,13 +40,22 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             "properties": {
                 "emails": {
                     "type": "array",
+                    "description": "An array of email objects",
                     "items": {
                         "type": "object",
                         "properties": {
-                            "subject": {"type": "string"},
+                            "subject": {
+                                "type": "string",
+                                "description": "The subject line of the email"
+                            },
                             "content": {
                                 "type": "object",
-                                "properties": {section.name: {"type": "string"} for section in email_structure}
+                                "properties": {
+                                    section.name: {
+                                        "type": "string",
+                                        "description": f"Content for the '{section.name}' section"
+                                    } for section in email_structure
+                                }
                             }
                         },
                         "required": ["subject", "content"]
@@ -69,7 +78,23 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             functions=[{
                 "name": "generate_email_sequence",
                 "description": "Generate an email sequence based on the given topic and inputs",
-                "parameters": json_structure
+                "parameters": json_structure,
+                "examples": [
+                    {
+                        "emails": [
+                            {
+                                "subject": "Exciting Pet Training Tip for Your Labrador!",
+                                "content": {
+                                    "This weeks' training tip": "This week, we're focusing on teaching your Labrador to 'stay'. This command is crucial for your dog's safety and obedience.",
+                                    "How you'll teach this": "Start with your dog in a sitting position. Hold your hand out, palm facing the dog, and say 'stay'. Take a step back. If your dog stays, immediately reward them with a treat and praise. Gradually increase the distance and duration.",
+                                    "Things to consider": "Remember, Labradors are energetic breeds. Ensure you've exercised your dog before training sessions to help them focus better.",
+                                    "If it's not going well": "If your Labrador is struggling with 'stay', try reducing distractions in the environment. Start in a quiet room before moving to more challenging locations.",
+                                    "CTA": "Share your 'stay' training progress with us! We'd love to hear how it's going."
+                                }
+                            }
+                        ]
+                    }
+                ]
             }],
             function_call={"name": "generate_email_sequence"},
             temperature=settings.OPENAI_TEMPERATURE,
@@ -84,8 +109,17 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         function_call = response.choices[0].message.function_call
         logger.info(f"Function call response:\n{json.dumps(function_call.arguments, indent=2)}")
         
-        emails_data = json.loads(function_call.arguments)['emails']
-        
+        try:
+            emails_data = json.loads(function_call.arguments)['emails']
+        except json.JSONDecodeError as e:
+            logger.error(f"JSONDecodeError in OpenAI response: {str(e)}")
+            logger.error(f"Raw response: {function_call.arguments}")
+            raise AppException(f"Invalid JSON in OpenAI API response: {str(e)}", status_code=500)
+        except KeyError as e:
+            logger.error(f"KeyError in OpenAI response: {str(e)}")
+            logger.error(f"Parsed response: {json.loads(function_call.arguments)}")
+            raise AppException(f"Missing 'emails' key in OpenAI API response", status_code=500)
+
         processed_emails = []
         current_date = datetime.now(TIMEZONE) + buffer_time
         for i, email in enumerate(emails_data):
@@ -118,12 +152,21 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
     except openai.error.Timeout as e:
         logger.error(f"OpenAI API timeout for batch starting at {start_index}: {str(e)}")
         raise AppException(f"OpenAI API timeout: {str(e)}", status_code=504)
-    except KeyError as e:
-        logger.error(f"KeyError in OpenAI response for batch starting at {start_index}: {str(e)}")
-        raise AppException(f"Invalid response structure from OpenAI API: {str(e)}", status_code=500)
-    except json.JSONDecodeError as e:
-        logger.error(f"JSONDecodeError in OpenAI response for batch starting at {start_index}: {str(e)}")
-        raise AppException(f"Invalid JSON in OpenAI API response: {str(e)}", status_code=500)
+    except openai.error.RateLimitError as e:
+        logger.error(f"OpenAI API rate limit exceeded for batch starting at {start_index}: {str(e)}")
+        raise AppException(f"OpenAI API rate limit exceeded: {str(e)}", status_code=429)
     except Exception as e:
         logger.error(f"Unexpected error in generate_email_sequence for batch starting at {start_index}: {str(e)}")
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
+
+def validate_email_content(email, email_structure):
+    for section in email_structure:
+        if section.name not in email['content'] or not email['content'][section.name].strip():
+            return False
+    return 'subject' in email and email['subject'].strip()
+
+# Add this after line 88
+for email in emails_data:
+    if not validate_email_content(email, email_structure):
+        logger.error(f"Invalid email content structure: {email}")
+        raise AppException("Invalid email content structure in OpenAI API response", status_code=500)
