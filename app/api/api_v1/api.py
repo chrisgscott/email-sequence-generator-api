@@ -80,7 +80,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         logger.error(f"AppException in webhook: {str(e)}")
         raise
     except Exception as e:
-        logger.error(f"Unexpected error in webhook: {str(e)}")
+        logger.error(f"Unexpected error in webhook: {str(e)}", exc_info=True)
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
 # Add other routes here if needed
