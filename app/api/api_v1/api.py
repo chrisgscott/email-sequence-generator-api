@@ -49,7 +49,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             EmailSection(
                 name=section['name'],
                 word_count=section['word_count'],
-                description=section.get('description', f"Content for {section['name']}")  # Provide a default description if not present
+                description=section.get('description', f"Content for {section['name']}")
             )
             for section in data['email_structure']
         ]

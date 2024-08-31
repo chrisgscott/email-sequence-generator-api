@@ -5,6 +5,7 @@ from datetime import datetime
 class EmailSection(BaseModel):
     name: str
     word_count: str
+    description: str
 
 class EmailBase(BaseModel):
     subject: str
