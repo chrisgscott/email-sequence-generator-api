@@ -95,7 +95,7 @@ def get_sequence(db: Session, sequence_id: int) -> Sequence:
 
 def get_existing_sequence(db: Session, topic: str, recipient_email: str, inputs: dict) -> Sequence:
     return db.query(Sequence).filter(
-        Sequence.topic == topic,
+        Sequence.form_id == form_id,
         Sequence.recipient_email == recipient_email,
         Sequence.inputs == inputs
     ).first()
