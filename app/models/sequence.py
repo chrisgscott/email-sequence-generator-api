@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, JSON, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
 
 class Sequence(Base):
@@ -7,13 +8,13 @@ class Sequence(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     form_id = Column(String, index=True)
-    topic = Column(String, index=True)
-    recipient_email = Column(String, index=True)
+    topic = Column(String)
+    recipient_email = Column(String)
     brevo_list_id = Column(Integer)
     total_emails = Column(Integer)
     days_between_emails = Column(Integer)
-    email_structure = Column(JSON)
-    inputs = Column(JSON)
+    email_structure = Column(JSONB)
+    inputs = Column(JSONB)
     is_active = Column(Boolean, default=True)
     next_email_date = Column(DateTime(timezone=True))
     progress = Column(Integer, default=0)

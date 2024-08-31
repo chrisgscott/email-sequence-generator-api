@@ -8,6 +8,8 @@ from app.core.exceptions import AppException
 from loguru import logger
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import func
+import json
+from sqlalchemy import String
 
 def create_sequence(db: Session, sequence: SequenceCreate):
     db_sequence = Sequence(
@@ -93,9 +95,9 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
 def get_sequence(db: Session, sequence_id: int) -> Sequence:
     return db.query(Sequence).filter(Sequence.id == sequence_id).first()
 
-def get_existing_sequence(db: Session, form_id: str, recipient_email: str, inputs: Dict[str, Any]) -> Optional[Sequence]:
+def get_existing_sequence(db: Session, form_id: str, recipient_email: str, inputs: Dict[str, Any]):
     return db.query(Sequence).filter(
         Sequence.form_id == form_id,
         Sequence.recipient_email == recipient_email,
-        Sequence.inputs == inputs
+        Sequence.inputs.cast(String) == json.dumps(inputs)
     ).first()
