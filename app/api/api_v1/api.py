@@ -66,6 +66,9 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             db_sequence = sequence_service.create_sequence(db, sequence_create)
             sequence_id = db_sequence.id
             logger.info(f"New sequence created with id: {sequence_id}")
+        except Exception as e:
+            logger.error(f"Error checking for existing sequence or creating new sequence: {str(e)}")
+            raise AppException(f"Error processing sequence: {str(e)}", status_code=500)
         finally:
             db.close()
         

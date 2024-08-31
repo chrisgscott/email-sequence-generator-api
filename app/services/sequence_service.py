@@ -93,7 +93,7 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
 def get_sequence(db: Session, sequence_id: int) -> Sequence:
     return db.query(Sequence).filter(Sequence.id == sequence_id).first()
 
-def get_existing_sequence(db: Session, topic: str, recipient_email: str, inputs: dict) -> Sequence:
+def get_existing_sequence(db: Session, form_id: str, recipient_email: str, inputs: Dict[str, Any]) -> Optional[Sequence]:
     return db.query(Sequence).filter(
         Sequence.form_id == form_id,
         Sequence.recipient_email == recipient_email,
