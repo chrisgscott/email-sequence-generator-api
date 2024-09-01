@@ -15,6 +15,7 @@ from app.models.sequence import Sequence
 from sqlalchemy.orm import Session
 from app.core.exceptions import AppException
 from typing import Dict
+from filelock import FileLock, Timeout
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,12 @@ def send_email(recipient_email: str, email_content: EmailContent, inputs: Dict[s
         
         logger.info(f"Sending email with subject: {email_content.subject}")
         
+        # Log the API call details
+        logger.info(f"Making API call to Brevo with the following details:")
+        logger.info(f"To: {send_smtp_email.to}")
+        logger.info(f"Params: {send_smtp_email.params}")
+        logger.info(f"Headers: {send_smtp_email.headers}")
+        
         # Make the API call
         api_response = api_instance.send_transac_email(send_smtp_email)
         
@@ -65,38 +72,43 @@ def send_email(recipient_email: str, email_content: EmailContent, inputs: Dict[s
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
 def check_and_send_scheduled_emails():
-    db = SessionLocal()
+    lock = FileLock("/tmp/check_and_send_scheduled_emails.lock", timeout=300)  # 5 minutes timeout
     try:
-        current_date = datetime.now(TIMEZONE)
-        logger.info(f"Checking for emails scheduled up to {current_date}")
-        
-        emails_to_send = db.query(Email).filter(
-            Email.scheduled_for <= current_date,
-            Email.sent_to_brevo == False
-        ).all()
-        
-        logger.info(f"Found {len(emails_to_send)} emails to send")
-        
-        for email in emails_to_send:
+        with lock:
+            db = SessionLocal()
             try:
-                if email.sent_to_brevo:
-                    logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
-                    continue
+                current_date = datetime.now(TIMEZONE)
+                logger.info(f"Checking for emails scheduled up to {current_date}")
                 
-                api_response = send_email(email.sequence.recipient_email, email, email.sequence.inputs)
+                emails_to_send = db.query(Email).filter(
+                    Email.scheduled_for <= current_date,
+                    Email.sent_to_brevo == False
+                ).all()
                 
-                email.sent_to_brevo = True
-                email.sent_to_brevo_at = current_date
-                email.brevo_message_id = api_response.message_id
-                db.commit()
-                logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
+                logger.info(f"Found {len(emails_to_send)} emails to send")
+                
+                for email in emails_to_send:
+                    try:
+                        if email.sent_to_brevo:
+                            logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
+                            continue
+                        
+                        api_response = send_email(email.sequence.recipient_email, email, email.sequence.inputs)
+                        
+                        email.sent_to_brevo = True
+                        email.sent_to_brevo_at = current_date
+                        email.brevo_message_id = api_response.message_id
+                        db.commit()
+                        logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
+                    except Exception as e:
+                        logger.error(f"Error sending email {email.id}: {str(e)}")
+                        db.rollback()
             except Exception as e:
-                logger.error(f"Error sending email {email.id}: {str(e)}")
-                db.rollback()
-    except Exception as e:
-        logger.error(f"Error in check_and_send_scheduled_emails: {str(e)}")
-    finally:
-        db.close()
+                logger.error(f"Error in check_and_send_scheduled_emails: {str(e)}")
+            finally:
+                db.close()
+    except Timeout:
+        logger.info("Another instance is already running. Exiting.")
 
 def send_email_background(db: Session, recipient_email: str, email: EmailContent, inputs: dict):
     try:

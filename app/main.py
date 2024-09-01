@@ -7,7 +7,6 @@ from app.api.api_v1.api import router as api_router
 from app.services.email_service import check_and_send_scheduled_emails, check_and_schedule_emails
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from threading import Lock
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,16 +33,9 @@ def read_root():
     return {"message": "Welcome to the Email Sequence Generator API"}
 
 scheduler = BackgroundScheduler()
-email_send_lock = Lock()
 
 def locked_check_and_send_scheduled_emails():
-    if email_send_lock.acquire(blocking=False):
-        try:
-            check_and_send_scheduled_emails()
-        finally:
-            email_send_lock.release()
-    else:
-        logger.info("Skipping email check as previous job is still running")
+    check_and_send_scheduled_emails()
 
 scheduler.add_job(locked_check_and_send_scheduled_emails, CronTrigger(minute="*/5")) #Set to 5 minutes for testing. Change this to something more appropriate for production.
 scheduler.add_job(check_and_schedule_emails, CronTrigger(hour="0", minute="0"))  # Run daily at midnight
