@@ -9,12 +9,13 @@ from datetime import timedelta, datetime
 from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.rate_limiter import openai_limiter
 import time
+from zoneinfo import ZoneInfo
 
 openai.api_key = settings.OPENAI_API_KEY
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(minutes=1), previous_topics: Dict[str, int] = {}, topic_depth: int = 5) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(minutes=1), previous_topics: Dict[str, int] = {}, topic_depth: int = 5, start_date: datetime = None) -> List[EmailBase]:
     try:
         sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
             index=i+1, 
@@ -133,7 +134,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             raise AppException(f"Missing 'emails' key in OpenAI API response", status_code=500)
 
         processed_emails = []
-        current_date = datetime.now(TIMEZONE) + buffer_time
+        current_date = start_date if start_date else datetime.now(TIMEZONE) + buffer_time
         for i, email in enumerate(emails_data, start=1):
             if 'wrap_up' not in email['content']:
                 if 'wrap_up' in email:
@@ -157,7 +158,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                 logger.error(f"Missing 'subject' key in email {start_index + i + 1}")
                 email['subject'] = f"Email {start_index + i + 1}"
 
-            scheduled_for = current_date + timedelta(days=(start_index + i) * days_between_emails)
+            scheduled_for = current_date + timedelta(days=i * days_between_emails)
             
             processed_emails.append(EmailBase(
                 subject=email['subject'],

@@ -1,8 +1,14 @@
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
 from typing import List, ClassVar
 from datetime import timezone
 from app.core.prompts import EMAIL_PROMPT, SECTIONS_PROMPT, SUBJECT_PROMPT
 import os
+
+# Load the .env file
+load_dotenv(override=True)
+
+print(f"Environment DATABASE_URL: {os.getenv('DATABASE_URL')}")
 
 class EmailSection(BaseSettings):
     """
@@ -22,9 +28,9 @@ class Settings(BaseSettings):
 
     # API Keys and Authentication
     OPENAI_API_KEY: str  # API key for OpenAI services
-    DATABASE_URL: str  # Connection string for the database
+    DATABASE_URL: str = os.getenv("DATABASE_URL")  # Connection string for the database
     BREVO_API_KEY: str = os.getenv("BREVO_API_KEY")  # API key for Brevo email service
-    BREVO_EMAIL_TEMPLATE_ID: int  # ID of the email template in Brevo
+    BREVO_EMAIL_TEMPLATE_ID: int = 1  # ID of the email template in Brevo
 
     # OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o-mini"  # The OpenAI model to use for generating email content
@@ -39,8 +45,8 @@ class Settings(BaseSettings):
     SEQUENCE_FREQUENCY_DAYS: int = 7  # Number of days between each email in the sequence
 
     # Email Sender Configuration
-    EMAIL_FROM: str  # Email address used as the sender
-    EMAIL_FROM_NAME: str  # Name to be displayed as the sender
+    EMAIL_FROM: str = "chris@chrisgscott.me"  # Email address used as the sender
+    EMAIL_FROM_NAME: str = "Chris Scott"  # Name to be displayed as the sender
 
     # Email Content Structure
     EMAIL_SECTIONS: List[EmailSection] = [
@@ -88,3 +94,5 @@ for key, value in settings.dict().items():
         print(f"{key}: {value}")
 
 TIMEZONE = timezone.utc
+
+print("Settings DATABASE_URL:", settings.DATABASE_URL)

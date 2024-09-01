@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr, validator
 from typing import Dict, List, Optional, Any, Union
-from datetime import datetime
+from datetime import datetime, time
 
 class EmailSection(BaseModel):
     name: str
@@ -38,6 +38,8 @@ class SequenceCreate(BaseModel):
     email_structure: List[EmailSection]
     inputs: Dict[str, str]
     topic_depth: int = Field(default=5, ge=1, le=10)
+    preferred_time: time = time(9, 0)  # default to 9:00 AM
+    timezone: str = "UTC"
 
 class SequenceResponse(BaseModel):
     id: int
@@ -57,3 +59,8 @@ class SequenceResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     emails: List[EmailContent]
+    preferred_time: time
+    timezone: str
+
+    class Config:
+        orm_mode = True

@@ -28,6 +28,8 @@ curl -X POST https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook \
     "interests_and_topics": "Mental health, mindfulness, parenting, and creativity.",
     "goals_and_aspirations": "I want to build a consistent morning routine, manage stress better, and tap into my creativity for personal projects."
   },
-  "topic_depth": 10
+  "topic_depth": 10,
+  "preferred_time": "07:30:00",
+  "timezone": "America/New_York"
 }
 EOF

@@ -26,7 +26,9 @@ def create_sequence(db: Session, sequence: SequenceCreate):
         email_structure=email_structure_json,
         inputs=sequence.inputs,
         status="generating",
-        progress=0
+        progress=0,
+        preferred_time=sequence.preferred_time,
+        timezone=sequence.timezone
     )
     db.add(db_sequence)
     db.commit()

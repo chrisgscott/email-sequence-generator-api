@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
 from zoneinfo import ZoneInfo
+from sqlalchemy.sql import func
 
 class Sequence(Base):
     __tablename__ = "sequences"
@@ -21,7 +22,7 @@ class Sequence(Base):
     progress = Column(Integer, default=0)
     status = Column(String, default="pending")
     error_message = Column(String, nullable=True)
-    preferred_time = Column(Time, nullable=False, default="09:00")
-    timezone = Column(String, nullable=False, default="UTC")
+    preferred_time = Column(Time, nullable=False, default=func.time('09:00:00'))
+    timezone = Column(String, nullable=False, default='UTC')
 
     emails = relationship("Email", back_populates="sequence")

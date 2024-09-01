@@ -9,7 +9,8 @@ import logging
 from sib_api_v3_sdk.rest import ApiException
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import func
-from datetime import date
+from datetime import date, dateTime
+from zoneinfo import ZoneInfo
 import pytz
 from app.models.sequence import Sequence
 from sqlalchemy.orm import Session
@@ -24,28 +25,37 @@ configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = settings.BREVO_API_KEY
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-def send_email(recipient_email: str, email_content: EmailContent, inputs: Dict[str, str]):
+def send_email(recipient_email: str, email: Email, sequence: Sequence):
     try:
         logger.info(f"Preparing to send email to {recipient_email}")
         
         # Create an instance of the API class
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
         
-        # Prepare the email data
+        subscriber_timezone = ZoneInfo(sequence.timezone)
+        
+        # Convert the UTC time from the database to the subscriber's local time
+        local_scheduled_time = email.scheduled_for.replace(tzinfo=ZoneInfo('UTC')).astimezone(subscriber_timezone)
+        
+        # Format the time for Brevo, including the UTC offset
+        utc_offset = local_scheduled_time.strftime('%z')
+        scheduled_at = local_scheduled_time.strftime(f'%Y-%m-%dT%H:%M:%S{utc_offset[:3]}:{utc_offset[3:]}')
+
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
             template_id=settings.BREVO_EMAIL_TEMPLATE_ID,
             params={
-                "subject": email_content.subject,
-                **email_content.content,
-                **inputs
+                "subject": email.content.subject,
+                **email.content.content,
+                **sequence.inputs
             },
             headers={
                 "X-Mailin-custom": "custom_header_1:custom_value_1|custom_header_2:custom_value_2"
-            }
+            },
+            scheduled_at=scheduled_at
         )
         
-        logger.info(f"Sending email with subject: {email_content.subject}")
+        logger.info(f"Sending email with subject: {email.content.subject}")
         
         # Log the API call details
         logger.info(f"Making API call to Brevo with the following details:")
@@ -64,8 +74,8 @@ def send_email(recipient_email: str, email_content: EmailContent, inputs: Dict[s
         raise AppException(f"Brevo API error: {str(e)}", status_code=500)
     except TypeError as e:
         logger.error(f"TypeError when preparing or sending email: {e}")
-        logger.error(f"Email content: {email_content}")
-        logger.error(f"Inputs: {inputs}")
+        logger.error(f"Email content: {email.content}")
+        logger.error(f"Inputs: {sequence.inputs}")
         raise AppException(f"Error preparing email data: {str(e)}", status_code=500)
     except Exception as e:
         logger.error(f"Unexpected error when sending email: {e}")
@@ -93,7 +103,7 @@ def check_and_send_scheduled_emails():
                             logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
                             continue
                         
-                        api_response = send_email(email.sequence.recipient_email, email, email.sequence.inputs)
+                        api_response = send_email(email.sequence.recipient_email, email, email.sequence)
                         
                         email.sent_to_brevo = True
                         email.sent_to_brevo_at = current_date
@@ -168,37 +178,51 @@ def check_and_schedule_emails():
         ).all()
         
         for sequence in sequences:
-            emails_to_schedule = [
-                email for email in sequence.emails 
-                if not email.sent_to_brevo and email.scheduled_for.replace(tzinfo=TIMEZONE) <= next_3_days
-            ]
-            
-            for email in emails_to_schedule:
-                try:
-                    if not email.sent_to_brevo:
-                        api_response = send_email(sequence.recipient_email, email, sequence.inputs)
-                        email.sent_to_brevo = True
-                        email.sent_to_brevo_at = current_date
-                        email.brevo_message_id = api_response.message_id
-                        db.commit()
-                        logger.info(f"Scheduled email {email.id} for sequence {sequence.id}")
-                    else:
-                        logger.warning(f"Email {email.id} for sequence {sequence.id} already sent to Brevo")
-                except AppException as e:
-                    logger.error(f"AppException scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
-                    db.rollback()
-                except Exception as e:
-                    logger.error(f"Unexpected error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
-                    db.rollback()
-            
-            sequence.next_email_date = min(
-                (email.scheduled_for.replace(tzinfo=TIMEZONE) for email in sequence.emails if not email.sent_to_brevo),
-                default=None
-            )
-            db.commit()
+            if should_send_email(sequence):
+                emails_to_schedule = [
+                    email for email in sequence.emails 
+                    if not email.sent_to_brevo and email.scheduled_for.replace(tzinfo=TIMEZONE) <= next_3_days
+                ]
+                
+                for email in emails_to_schedule:
+                    try:
+                        if not email.sent_to_brevo:
+                            api_response = send_email(sequence.recipient_email, email, sequence)
+                            email.sent_to_brevo = True
+                            email.sent_to_brevo_at = current_date
+                            email.brevo_message_id = api_response.message_id
+                            db.commit()
+                            logger.info(f"Scheduled email {email.id} for sequence {sequence.id}")
+                        else:
+                            logger.warning(f"Email {email.id} for sequence {sequence.id} already sent to Brevo")
+                    except AppException as e:
+                        logger.error(f"AppException scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
+                        db.rollback()
+                    except Exception as e:
+                        logger.error(f"Unexpected error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
+                        db.rollback()
+                
+                sequence.next_email_date = min(
+                    (email.scheduled_for.replace(tzinfo=TIMEZONE) for email in sequence.emails if not email.sent_to_brevo),
+                    default=None
+                )
+                db.commit()
         
         logger.info("Finished checking and scheduling emails")
     except Exception as e:
         logger.error(f"Error in check_and_schedule_emails: {str(e)}")
     finally:
         db.close()
+
+def should_send_email(sequence: Sequence) -> bool:
+    now = datetime.now(ZoneInfo(sequence.timezone))
+    preferred_time = datetime.combine(now.date(), sequence.preferred_time)
+    preferred_time = preferred_time.replace(tzinfo=ZoneInfo(sequence.timezone))
+    
+    # Allow a 15-minute window for sending
+    return abs((now - preferred_time).total_seconds()) < 900  # 15 minutes in seconds
+
+def get_utc_offset(timezone_str: str) -> str:
+    now = datetime.now(ZoneInfo(timezone_str))
+    offset = now.strftime('%z')
+    return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM

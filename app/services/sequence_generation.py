@@ -1,5 +1,6 @@
 import asyncio
-from datetime import timedelta
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from loguru import logger
 from app.core.config import settings
 from app.core.exceptions import AppException
@@ -19,6 +20,19 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         total_batches = (sequence.total_emails + settings.BATCH_SIZE - 1) // settings.BATCH_SIZE
         start_batch = db_sequence.progress * total_batches // 100
 
+        # Calculate the start date based on preferred time and timezone
+        subscriber_timezone = ZoneInfo(sequence.timezone)
+        start_date = datetime.now(subscriber_timezone).replace(
+            hour=sequence.preferred_time.hour,
+            minute=sequence.preferred_time.minute,
+            second=0,
+            microsecond=0
+        )
+        if start_date <= datetime.now(subscriber_timezone):
+            start_date += timedelta(days=1)
+
+        logger.info(f"Sequence start date: {start_date}")
+
         for batch in range(start_batch * settings.BATCH_SIZE, sequence.total_emails, settings.BATCH_SIZE):
             batch_number = batch // settings.BATCH_SIZE + 1
             logger.info(f"Generating batch {batch_number} of {total_batches} for sequence_id: {sequence_id}")
@@ -32,7 +46,8 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                         min(settings.BATCH_SIZE, sequence.total_emails - batch),
                         sequence.days_between_emails,
                         previous_topics=previous_topics,
-                        topic_depth=sequence.topic_depth
+                        topic_depth=sequence.topic_depth,
+                        start_date=start_date  # Pass the start_date to the generate_email_sequence function
                     ),
                     timeout=settings.OPENAI_REQUEST_TIMEOUT
                 )
@@ -48,6 +63,10 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                 sequence_service.update_sequence_progress(db, sequence_id, progress)
                 
                 db.commit()
+
+                # Update start_date for the next batch
+                start_date += timedelta(days=len(batch_emails) * sequence.days_between_emails)
+
             except asyncio.TimeoutError:
                 logger.error(f"Timeout occurred while generating batch {batch_number} for sequence_id: {sequence_id}")
                 sequence_service.update_sequence_progress(db, sequence_id, progress)

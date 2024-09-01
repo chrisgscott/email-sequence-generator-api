@@ -28,7 +28,9 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         sequence_settings = data.get("sequence_settings", {})
         email_structure = data.get("email_structure", [])
         inputs = data.get("inputs", {})
-        
+        preferred_time = data.get("preferred_time", "09:00:00")
+        timezone = data.get("timezone", "UTC")
+
         logger.info(f"Parsed JSON data: {data}")
         
         # Validate required fields
@@ -56,6 +58,10 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         
         topic_depth = data.get("topic_depth", 5)  # Add this line after line 30
         
+        # Convert preferred_time string to time object
+        from datetime import datetime, time
+        preferred_time_obj = datetime.strptime(preferred_time, "%H:%M:%S").time()
+
         sequence_create = SequenceCreate(
             form_id=form_id,
             topic=topic,
@@ -65,7 +71,9 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
             days_between_emails=sequence_settings['days_between_emails'],
             email_structure=email_structure,
             inputs=inputs,
-            topic_depth=topic_depth  # Add this line
+            topic_depth=topic_depth,
+            preferred_time=preferred_time_obj,
+            timezone=timezone
         )
         
         # Check for existing sequence

@@ -7,6 +7,7 @@ from app.services import sequence_service
 from app.services.sequence_generation import generate_and_store_email_sequence
 from loguru import logger
 from typing import List
+from datetime import time
 
 class SubmissionQueue(BaseModel):
     form_id: str
@@ -18,6 +19,8 @@ class SubmissionQueue(BaseModel):
     email_structure: List[EmailSection]
     inputs: dict
     topic_depth: int
+    preferred_time: time
+    timezone: str
 
 async def process_submission_queue(queue: Queue):
     while True:
@@ -41,7 +44,9 @@ async def process_submission(submission: SubmissionQueue):
             days_between_emails=submission.days_between_emails,
             email_structure=submission.email_structure,
             inputs=submission.inputs,
-            topic_depth=submission.topic_depth
+            topic_depth=submission.topic_depth,
+            preferred_time=submission.preferred_time,
+            timezone=submission.timezone
         )
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         sequence_id = db_sequence.id
