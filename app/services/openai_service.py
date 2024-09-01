@@ -134,7 +134,16 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
 
         processed_emails = []
         current_date = datetime.now(TIMEZONE) + buffer_time
-        for i, email in enumerate(emails_data):
+        for i, email in enumerate(emails_data, start=1):
+            if 'wrap_up' not in email['content']:
+                if 'wrap_up' in email:
+                    # Move wrap_up inside content if it's at the top level
+                    email['content']['wrap_up'] = email['wrap_up']
+                    del email['wrap_up']
+                else:
+                    logger.warning(f"Content for wrap_up was not generated in email {i}. Generating default wrap_up.")
+                    email['content']['wrap_up'] = "Remember, every day is a new opportunity for growth and connection. Embrace it!"
+
             if 'content' not in email:
                 logger.error(f"Missing 'content' key in email {start_index + i + 1}")
                 email['content'] = {}
@@ -181,4 +190,4 @@ def validate_email_content(email, email_structure):
 # for email in emails_data:
 #    if not validate_email_content(email, email_structure):
 #        logger.error(f"Invalid email content structure: {email}")
-#        raise AppException("
+#        raise AppException("")

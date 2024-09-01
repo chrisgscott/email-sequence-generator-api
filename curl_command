@@ -12,12 +12,12 @@ curl -X POST https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook \
   },
   "email_structure": [
     {
-      "name": "Today's Journal Prompt",
+      "name": "journal_prompt",
       "word_count": "100-250",
       "description": "The journal prompt for today."
     },
     {
-      "name": "Wrap Up",
+      "name": "wrap_up",
       "word_count": 50,
       "description": "A quick, inspirational or encouraging wrap up for today's email."
     }
@@ -25,7 +25,7 @@ curl -X POST https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook \
   "inputs": {
     "first_name": "Chris",
     "context": "You are creating a daily journal prompt that will be sent via email. Be sure to create a prompt that is relevant to the included interests_and_topics and their goals_and_aspirations. Prompts should always be positive and encouraging. Be sure that your prompts are direct and give a very specific and actionable direction for what they should write today. Avoid giving non-writing tasks. Your job is to give them a jumping-off point for what to write in their journal today, so lean toward prompts that encourage introspection, future-casting, mindfulness, gratitude, overcoming challenges, challenging themselves, etc.",
-    "interests_and_topics": "Mental health, mindfulness, and creativity.",
+    "interests_and_topics": "Mental health, mindfulness, parenting, and creativity.",
     "goals_and_aspirations": "I want to build a consistent morning routine, manage stress better, and tap into my creativity for personal projects."
   },
   "topic_depth": 10
