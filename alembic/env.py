@@ -10,9 +10,9 @@ project_root = Path(__file__).parents[1]
 sys.path.append(str(project_root))
 
 from alembic import context
+from app.db.database import Base
 from app.models import sequence, email
 from app.core.config import settings
-from app.db.database import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -33,8 +33,8 @@ target_metadata = Base.metadata
 # ... etc.
 
 import logging
-logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('alembic')
 
 load_dotenv()  # This loads the variables from .env file, if it exists
 
@@ -77,3 +77,35 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
+
+import os
+
+logger.debug(f"Current directory: {os.getcwd()}")
+logger.debug(f"Alembic directory: {os.path.dirname(__file__)}")
+logger.debug(f"Versions directory: {os.path.join(os.path.dirname(__file__), 'versions')}")
+logger.debug(f"Database URL: {config.get_main_option('sqlalchemy.url')}")
+logger.debug(f"Metadata tables: {Base.metadata.tables.keys()}")
+
+# Check if the problematic revision exists in any file
+for root, dirs, files in os.walk(os.getcwd()):
+    for file in files:
+        if file.endswith('.py'):
+            with open(os.path.join(root, file), 'r') as f:
+                content = f.read()
+                if 'b352902318c9' in content:
+                    logger.debug(f"Found problematic revision in file: {os.path.join(root, file)}")
+
+print("Current directory:", os.getcwd())
+print("Alembic directory:", os.path.dirname(__file__))
+print("Versions directory:", os.path.join(os.path.dirname(__file__), 'versions'))
+print("Database URL:", config.get_main_option("sqlalchemy.url"))
+print("Metadata tables:", Base.metadata.tables.keys())
+
+# Check if the problematic revision exists in any file
+for root, dirs, files in os.walk(os.getcwd()):
+    for file in files:
+        if file.endswith('.py'):
+            with open(os.path.join(root, file), 'r') as f:
+                content = f.read()
+                if 'b352902318c9' in content:
+                    print(f"Found problematic revision in file: {os.path.join(root, file)}")

@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Time
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
+from zoneinfo import ZoneInfo
 
 class Sequence(Base):
     __tablename__ = "sequences"
@@ -20,5 +21,7 @@ class Sequence(Base):
     progress = Column(Integer, default=0)
     status = Column(String, default="pending")
     error_message = Column(String, nullable=True)
+    preferred_time = Column(Time, nullable=False, default="09:00")
+    timezone = Column(String, nullable=False, default="UTC")
 
     emails = relationship("Email", back_populates="sequence")
