@@ -38,7 +38,7 @@ class SequenceCreate(BaseModel):
     email_structure: List[EmailSection]
     inputs: Dict[str, str]
     topic_depth: int = Field(default=5, ge=1, le=10)
-    preferred_time: time = time(9, 0)  # default to 9:00 AM
+    preferred_time: time
     timezone: str = "UTC"
 
 class SequenceResponse(BaseModel):

@@ -28,7 +28,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         sequence_settings = data.get("sequence_settings", {})
         email_structure = data.get("email_structure", [])
         inputs = data.get("inputs", {})
-        preferred_time = data.get("preferred_time", "09:00:00")
+        preferred_time = data.get("preferred_time", "07:30:00")
         timezone = data.get("timezone", "UTC")
 
         logger.info(f"Parsed JSON data: {data}")
@@ -58,9 +58,13 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         
         topic_depth = data.get("topic_depth", 5)  # Add this line after line 30
         
-        # Convert preferred_time string to time object
-        from datetime import datetime, time
-        preferred_time_obj = datetime.strptime(preferred_time, "%H:%M:%S").time()
+        # Update this part
+        try:
+            # Try parsing with seconds
+            preferred_time_obj = datetime.strptime(preferred_time, "%H:%M:%S").time()
+        except ValueError:
+            # If that fails, try parsing without seconds
+            preferred_time_obj = datetime.strptime(preferred_time, "%H:%M").time()
 
         sequence_create = SequenceCreate(
             form_id=form_id,
