@@ -14,7 +14,7 @@ openai.api_key = settings.OPENAI_API_KEY
 
 @openai_limiter
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
-async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(hours=1), previous_topics: Dict[str, int] = {}, topic_depth: int = 5) -> List[EmailBase]:
+async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection], start_index: int, batch_size: int, days_between_emails: int, buffer_time: timedelta = timedelta(minutes=1), previous_topics: Dict[str, int] = {}, topic_depth: int = 5) -> List[EmailBase]:
     try:
         sections_prompt = "\n".join([settings.OPENAI_SECTIONS_PROMPT.format(
             index=i+1, 
