@@ -125,6 +125,12 @@ def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict
     
     scheduled_at = int(email_content.scheduled_for.replace(tzinfo=pytz.UTC).timestamp())
     
+    # Log the API call details
+    logger.info(f"Making API call to Brevo with the following details:")
+    logger.info(f"To: {to}")
+    logger.info(f"Params: {params}")
+    logger.info(f"Scheduled At: {scheduled_at}")
+
     try:
         api_response = api_instance.send_transac_email({
             "templateId": settings.BREVO_EMAIL_TEMPLATE_ID,
