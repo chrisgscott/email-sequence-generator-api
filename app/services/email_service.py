@@ -150,7 +150,10 @@ def check_and_schedule_emails():
         ).all()
         
         for sequence in sequences:
-            emails_to_schedule = [email for email in sequence.emails if not email.sent_to_brevo and email.scheduled_for <= next_3_days]
+            emails_to_schedule = [
+                email for email in sequence.emails 
+                if not email.sent_to_brevo and email.scheduled_for.replace(tzinfo=TIMEZONE) <= next_3_days
+            ]
             
             for email in emails_to_schedule:
                 try:
@@ -170,7 +173,10 @@ def check_and_schedule_emails():
                     logger.error(f"Unexpected error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
                     db.rollback()
             
-            sequence.next_email_date = min((email.scheduled_for for email in sequence.emails if not email.sent_to_brevo), default=None)
+            sequence.next_email_date = min(
+                (email.scheduled_for.replace(tzinfo=TIMEZONE) for email in sequence.emails if not email.sent_to_brevo),
+                default=None
+            )
             db.commit()
         
         logger.info("Finished checking and scheduling emails")
