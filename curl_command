@@ -4,7 +4,7 @@ curl -X POST https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook \
 {
   "form_id": "daily_journal_prompts",
   "topic": "Daily Journal Prompts",
-  "recipient_email": "chrisgscott+biz@gmail.com",
+  "recipient_email": "chrisgscott+djp@gmail.com",
   "brevo_list_id": 3,
   "sequence_settings": {
     "total_emails": 30,
