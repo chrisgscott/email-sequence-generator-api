@@ -4,12 +4,11 @@ from app.schemas.sequence import EmailContent
 from fastapi import BackgroundTasks
 from app.db.database import SessionLocal
 from app.models.email import Email
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import logging
 from sib_api_v3_sdk.rest import ApiException
 from tenacity import retry, stop_after_attempt, wait_exponential
 from sqlalchemy import func
-from datetime import date, dateTime
 from zoneinfo import ZoneInfo
 import pytz
 from app.models.sequence import Sequence
