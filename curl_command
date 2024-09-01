@@ -19,7 +19,7 @@ curl -X POST https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook \
     {
       "name": "Why It's Important",
       "word_count": 150,
-      "description": "Explain the importance of implementing this tip into their business."
+      "description": "Explain the importance of implementing this tip in their business."
     },
     {
       "name": "Things to consider",
