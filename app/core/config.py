@@ -8,8 +8,6 @@ import os
 # Load the .env file
 load_dotenv(override=True)
 
-print(f"Environment DATABASE_URL: {os.getenv('DATABASE_URL')}")
-
 class EmailSection(BaseSettings):
     """
     Defines the structure for each section of the email content.
@@ -88,11 +86,4 @@ Return the result as a JSON array with {batch_size} items.
 
 settings = Settings()
 
-print("All settings loaded:")
-for key, value in settings.dict().items():
-    if key not in ['EMAIL_SECTIONS', 'OPENAI_API_KEY', 'BREVO_API_KEY']:  # Exclude sensitive or large data
-        print(f"{key}: {value}")
-
 TIMEZONE = timezone.utc
-
-print("Settings DATABASE_URL:", settings.DATABASE_URL)
