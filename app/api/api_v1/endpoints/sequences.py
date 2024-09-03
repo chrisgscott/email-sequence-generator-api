@@ -22,9 +22,10 @@ async def webhook(
     api_key: str = Header(..., alias="X-API-Key"), 
     db: Session = Depends(get_db)
 ):
-    # Validate API key
-    if not api_key_service.validate_api_key(db, api_key):
-        raise HTTPException(status_code=401, detail="Invalid API key")
+    # Use a new session for API key validation
+    with SessionLocal() as session:
+        if not api_key_service.validate_api_key(session, api_key):
+            raise HTTPException(status_code=401, detail="Invalid API key")
     
     try:
         data = await request.json()
