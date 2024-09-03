@@ -21,7 +21,6 @@ def create_sequence(db: Session, sequence: SequenceCreate) -> Sequence:
         days_between_emails=sequence.days_between_emails,
         email_structure=sequence.email_structure,
         inputs=sequence.inputs,
-        topic_depth=sequence.topic_depth,
         preferred_time=sequence.preferred_time,
         timezone=sequence.timezone
     )

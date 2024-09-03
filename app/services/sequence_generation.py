@@ -37,26 +37,23 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
             batch_number = batch // settings.BATCH_SIZE + 1
             logger.info(f"Generating batch {batch_number} of {total_batches} for sequence_id: {sequence_id}")
             try:
-                batch_emails = await asyncio.wait_for(
-                    openai_service.generate_email_sequence(
-                        sequence.topic,
-                        sequence.inputs,
-                        sequence.email_structure,
-                        batch,
-                        min(settings.BATCH_SIZE, sequence.total_emails - batch),
-                        sequence.days_between_emails,
-                        previous_topics=previous_topics,
-                        topic_depth=sequence.topic_depth,
-                        start_date=start_date  # Pass the start_date to the generate_email_sequence function
-                    ),
-                    timeout=settings.OPENAI_REQUEST_TIMEOUT
+                emails = await openai_service.generate_email_sequence(
+                    sequence.topic,
+                    sequence.inputs,
+                    sequence.email_structure,
+                    batch,
+                    min(settings.BATCH_SIZE, sequence.total_emails - batch),
+                    sequence.days_between_emails,
+                    previous_topics=previous_topics,
+                    topic_depth=sequence.topic_depth,
+                    start_date=start_date
                 )
                 
                 # Update topics from generated emails
-                for email in batch_emails:
+                for email in emails:
                     previous_topics[email.subject] = previous_topics.get(email.subject, 0) + 1
 
-                sequence_service.add_emails_to_sequence(db, sequence_id, batch_emails)
+                sequence_service.add_emails_to_sequence(db, sequence_id, emails)
                 logger.info(f"Saved batch {batch_number} to database for sequence_id: {sequence_id}")
                 
                 progress = min(100, int((batch_number / total_batches) * 100))
@@ -65,7 +62,7 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                 db.commit()
 
                 # Update start_date for the next batch
-                start_date += timedelta(days=len(batch_emails) * sequence.days_between_emails)
+                start_date += timedelta(days=len(emails) * sequence.days_between_emails)
 
             except asyncio.TimeoutError:
                 logger.error(f"Timeout occurred while generating batch {batch_number} for sequence_id: {sequence_id}")

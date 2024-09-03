@@ -36,8 +36,8 @@ class SequenceCreate(BaseModel):
     total_emails: int
     days_between_emails: int
     email_structure: List[EmailSection]
-    inputs: Dict[str, Any]
-    topic_depth: int
+    inputs: Dict[str, str]
+    topic_depth: int = Field(default=5)
     preferred_time: time
     timezone: str
 
@@ -61,6 +61,7 @@ class SequenceResponse(BaseModel):
     emails: List[EmailContent]
     preferred_time: time
     timezone: str
+    topic_depth: int
 
     class Config:
         from_attributes = True
