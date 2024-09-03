@@ -22,10 +22,9 @@ async def webhook(
     api_key: str = Header(..., alias="X-API-Key"), 
     db: Session = Depends(get_db)
 ):
-    # Use a new session for API key validation
-    with SessionLocal() as session:
-        if not api_key_service.validate_api_key(session, api_key):
-            raise HTTPException(status_code=401, detail="Invalid API key")
+    # Use the db session directly for API key validation
+    if not api_key_service.validate_api_key(db, api_key):
+        raise HTTPException(status_code=401, detail="Invalid API key")
     
     try:
         data = await request.json()
@@ -88,18 +87,18 @@ async def webhook(
             timezone=timezone
         )
         
-        # Create sequence in database
+        # Create sequence
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         
-        # Add task to background queue
-        background_tasks.add_task(generate_and_store_email_sequence, db_sequence.id, sequence_create)
-        
+        # Schedule email generation
+        background_tasks.add_task(
+            generate_and_store_email_sequence,
+            db_sequence.id,
+            sequence_create
+        )
+
         return {"message": "Sequence creation initiated", "sequence_id": db_sequence.id}
     
-    except json.JSONDecodeError:
-        raise AppException("Invalid JSON in request body", status_code=400)
-    except AppException as e:
-        raise e
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise AppException("An unexpected error occurred", status_code=500)
