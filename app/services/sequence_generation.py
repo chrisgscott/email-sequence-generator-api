@@ -88,6 +88,36 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                 db.commit()
                 raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
+        # Check if we've generated the correct number of emails
+        actual_email_count = sequence_service.get_email_count(db, sequence_id)
+        if actual_email_count < sequence.total_emails:
+            logger.warning(f"Only {actual_email_count} emails generated for sequence {sequence_id}. Expected {sequence.total_emails}.")
+            remaining_emails = sequence.total_emails - actual_email_count
+            
+            try:
+                additional_emails = await asyncio.wait_for(
+                    openai_service.generate_email_sequence(
+                        sequence.topic,
+                        sequence.inputs,
+                        sequence.email_structure,
+                        actual_email_count,
+                        remaining_emails,
+                        sequence.days_between_emails,
+                        previous_topics=previous_topics,
+                        topic_depth=sequence.topic_depth,
+                        start_date=start_date
+                    ),
+                    timeout=settings.OPENAI_REQUEST_TIMEOUT
+                )
+                
+                sequence_service.add_emails_to_sequence(db, sequence_id, additional_emails)
+                logger.info(f"Generated and added {len(additional_emails)} additional emails for sequence {sequence_id}")
+                
+                db.commit()
+            except Exception as e:
+                logger.error(f"Failed to generate additional emails for sequence {sequence_id}: {str(e)}")
+                raise AppException(f"Failed to generate all requested emails: {str(e)}", status_code=500)
+
         logger.info(f"Email generation complete for sequence_id: {sequence_id}. Finalizing sequence.")
         sequence_service.finalize_sequence(db, sequence_id)
         logger.info(f"Sequence finalized for sequence_id: {sequence_id}")

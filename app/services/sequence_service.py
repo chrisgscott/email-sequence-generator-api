@@ -109,3 +109,6 @@ def get_existing_sequence(db: Session, form_id: str, recipient_email: str, input
         Sequence.recipient_email == recipient_email,
         Sequence.inputs.cast(String) == json.dumps(inputs)
     ).first()
+
+def get_email_count(db: Session, sequence_id: int) -> int:
+    return db.query(func.count(Email.id)).filter(Email.sequence_id == sequence_id).scalar()
