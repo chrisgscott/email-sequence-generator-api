@@ -22,11 +22,11 @@ async def webhook(
     api_key: str = Header(..., alias="X-API-Key"), 
     db: Session = Depends(get_db)
 ):
-    # Use the db session directly for API key validation
-    if not api_key_service.validate_api_key(db, api_key):
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    
     try:
+        # Use the db session directly for API key validation
+        if not api_key_service.validate_api_key(db, api_key):
+            raise HTTPException(status_code=401, detail="Invalid API key")
+        
         data = await request.json()
         logger.info(f"Received webhook data: {data}")
         
@@ -48,7 +48,6 @@ async def webhook(
         if not all(field in data for field in required_fields):
             raise AppException("Missing required fields in webhook data", status_code=400)
         
-        # Validate sequence_settings
         if "total_emails" not in sequence_settings or "days_between_emails" not in sequence_settings:
             raise AppException("Missing required fields in sequence_settings", status_code=400)
         
@@ -87,7 +86,6 @@ async def webhook(
             timezone=timezone
         )
         
-        # Create sequence
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         
         # Schedule email generation
