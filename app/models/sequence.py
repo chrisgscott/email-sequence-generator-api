@@ -4,6 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
 from zoneinfo import ZoneInfo
 from sqlalchemy.sql import func
+from .email import Email
 
 class Sequence(Base):
     __tablename__ = "sequences"

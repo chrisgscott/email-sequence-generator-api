@@ -89,6 +89,9 @@ Return the result as a JSON array with {batch_size} items.
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Database Settings
+    DATABASE_URL: str = os.getenv("DATABASE_URL")  # Connection string for the database
+
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
 

@@ -25,8 +25,7 @@ $config = [
         'interests_and_topics' => 'What are your interests and topics?',
         'goals_and_aspirations' => 'What are your goals and aspirations?'
     ],
-    'api_endpoint' => 'https://plankton-app-qivtq.ondigitalocean.app/api/v1/webhook',
-    'api_key' => 'your_api_key_here'  // Add this line
+    'api_endpoint' => 'https://plankton-app-qivtq.ondigitalocean.app/api/v1/sequences/webhook',
 ];
 
 // Generate HTML Form
@@ -118,21 +117,24 @@ document.addEventListener('DOMContentLoaded', function() {
             timezone: formData.get('timezone')
         };
 
-        fetch('{$config['api_endpoint']}', {
+        fetch('/wp-json/esak/v1/submit-form', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-API-Key': '{$config['api_key']}',  // Add this line
             },
             body: JSON.stringify(payload),
         })
-        .then(response => response.json())
         .then(data => {
+            console.log('Success:', data);
             if (data.sequence_id) {
-                alert('Form submitted successfully!');
-                // Redirect or show success message
+                // Redirect to the success page with query parameters
+                const successUrl = new URL('/success', window.location.origin);
+                successUrl.searchParams.append('firstName', encodeURIComponent(formData.get('first_name')));
+                successUrl.searchParams.append('preferredTime', encodeURIComponent(formData.get('preferred_time')));
+                successUrl.searchParams.append('timezone', encodeURIComponent(formData.get('timezone')));
+                window.location.href = successUrl.toString();
             } else {
-                alert('Error creating sequence');
+                alert('Error creating sequence: ' + (data.message || 'Unknown error'));
             }
         })
         .catch((error) => {

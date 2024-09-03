@@ -12,6 +12,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.db.database import Base
 from app.models import sequence, email  # adjust this import based on your project structure
+from app.models.user import User
+from app.models.api_key import APIKey
+from app.models.sequence import Sequence
+from app.models.email import Email
+# Import any other models you have
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -11,17 +11,9 @@ def generate_api_key(db: Session, user_id: int) -> str:
     db.refresh(db_api_key)
     return key
 
-def validate_api_key(db: Session, key: str, user_id: int) -> bool:
-    db_api_key = db.query(APIKey).filter(
-        APIKey.key == key, 
-        APIKey.is_active == True,
-        APIKey.user_id == user_id
-    ).first()
-    if db_api_key:
-        db_api_key.last_used_at = datetime.utcnow()
-        db.commit()
-        return True
-    return False
+def validate_api_key(db: Session, api_key: str) -> bool:
+    db_api_key = db.query(APIKey).filter(APIKey.key == api_key, APIKey.is_active == True).first()
+    return db_api_key is not None
 
 def deactivate_api_key(db: Session, key: str) -> bool:
     db_api_key = db.query(APIKey).filter(APIKey.key == key).first()
