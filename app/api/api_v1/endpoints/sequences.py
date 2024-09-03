@@ -19,7 +19,7 @@ router = APIRouter()
 async def webhook(
     request: Request, 
     background_tasks: BackgroundTasks, 
-    api_key: str = Header(..., convert_underscores=False), 
+    api_key: str = Header(..., alias="X-API-Key"), 
     db: Session = Depends(get_db)
 ):
     # Validate API key
