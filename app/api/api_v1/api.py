@@ -11,11 +11,12 @@ import json
 from typing import List
 from app.services import sequence_generation
 from datetime import datetime
+from app.main import validate_api_key  # Add this line
 
 router = APIRouter()
 
 @router.post("/webhook")
-async def webhook(request: Request, background_tasks: BackgroundTasks):
+async def webhook(request: Request, background_tasks: BackgroundTasks, api_key: str = Depends(validate_api_key)):
     logger.info("Webhook endpoint hit")
     try:
         data = await request.json()
@@ -114,4 +115,15 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
         logger.error(f"Unexpected error in webhook: {str(e)}", exc_info=True)
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
-# Add other routes here if needed
+@router.post("/generate_api_key")
+async def generate_api_key(user_id: int, db: Session = Depends(get_db)):
+    api_key = api_key_service.generate_api_key(db, user_id)
+    return {"api_key": api_key}
+
+@router.post("/deactivate_api_key")
+async def deactivate_api_key(api_key: str, db: Session = Depends(get_db)):
+    success = api_key_service.deactivate_api_key(db, api_key)
+    if success:
+        return {"message": "API key deactivated successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="API key not found")

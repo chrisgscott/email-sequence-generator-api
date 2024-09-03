@@ -81,6 +81,9 @@ Return the result as a JSON array with {batch_size} items.
     OPENAI_SECTIONS_PROMPT: ClassVar[str] = "Section {index}: {name}\nDescription: {description}\nWord Count: {word_count}"  # Prompt for generating individual email sections
     OPENAI_SUBJECT_PROMPT: ClassVar[str] = SUBJECT_PROMPT  # Prompt for generating email subject lines
 
+    # API Key Settings
+    API_KEY_LENGTH: int = 32
+
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
 
