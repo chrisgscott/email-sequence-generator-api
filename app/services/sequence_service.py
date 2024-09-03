@@ -12,6 +12,14 @@ import json
 from sqlalchemy import String
 
 def create_sequence(db: Session, sequence: SequenceCreate) -> Sequence:
+    email_structure_json = [
+        {
+            "name": section.name,
+            "word_count": section.word_count,
+            "description": section.description
+        }
+        for section in sequence.email_structure
+    ]
     db_sequence = Sequence(
         form_id=sequence.form_id,
         topic=sequence.topic,
@@ -19,7 +27,7 @@ def create_sequence(db: Session, sequence: SequenceCreate) -> Sequence:
         brevo_list_id=sequence.brevo_list_id,
         total_emails=sequence.total_emails,
         days_between_emails=sequence.days_between_emails,
-        email_structure=sequence.email_structure,
+        email_structure=email_structure_json,
         inputs=sequence.inputs,
         preferred_time=sequence.preferred_time,
         timezone=sequence.timezone
