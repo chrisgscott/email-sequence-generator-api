@@ -55,7 +55,7 @@ async def webhook(
             if not isinstance(email_structure, list) or not all(isinstance(section, dict) and "name" in section and "word_count" in section for section in email_structure):
                 raise AppException("Invalid email_structure format", status_code=400)
         
-            # Create SequenceCreate object
+            # Create EmailSection objects
             email_structure = [
                 EmailSection(
                     name=section['name'],

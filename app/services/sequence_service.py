@@ -13,17 +13,17 @@ from sqlalchemy import String
 
 def create_sequence(db: Session, sequence: SequenceCreate) -> Sequence:
     db_sequence = Sequence(
+        form_id=sequence.form_id,
         topic=sequence.topic,
         recipient_email=sequence.recipient_email,
         brevo_list_id=sequence.brevo_list_id,
-        total_emails=sequence.sequence_settings.total_emails,
-        days_between_emails=sequence.sequence_settings.days_between_emails,
-        email_structure=json.dumps(sequence.email_structure),
-        inputs=json.dumps(sequence.inputs),
+        total_emails=sequence.total_emails,
+        days_between_emails=sequence.days_between_emails,
+        email_structure=sequence.email_structure,
+        inputs=sequence.inputs,
         topic_depth=sequence.topic_depth,
         preferred_time=sequence.preferred_time,
-        timezone=sequence.timezone,
-        status="pending"
+        timezone=sequence.timezone
     )
     db.add(db_sequence)
     db.commit()

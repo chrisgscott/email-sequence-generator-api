@@ -4,7 +4,7 @@ from datetime import datetime, time
 
 class EmailSection(BaseModel):
     name: str
-    word_count: Union[int, str]
+    word_count: int
     description: str
 
     @validator('word_count')
@@ -29,17 +29,17 @@ class EmailContent(EmailBase):
     pass
 
 class SequenceCreate(BaseModel):
+    form_id: str
     topic: str
     recipient_email: str
-    form_id: str
     brevo_list_id: int
     total_emails: int
     days_between_emails: int
     email_structure: List[EmailSection]
-    inputs: Dict[str, str]
-    topic_depth: int = Field(default=5, ge=1, le=10)
+    inputs: Dict[str, Any]
+    topic_depth: int
     preferred_time: time
-    timezone: str = "UTC"
+    timezone: str
 
 class SequenceResponse(BaseModel):
     id: int
