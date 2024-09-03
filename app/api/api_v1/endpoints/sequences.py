@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, Request, HTTPException,
 from sqlalchemy.orm import Session
 from app.db.database import get_db, SessionLocal
 from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailSection
+from app.services.sequence_generation import generate_and_store_email_sequence
 from app.services import sequence_service, brevo_service, api_key_service
 from app.core.exceptions import AppException
 from app.models.sequence import Sequence
@@ -28,7 +29,7 @@ async def webhook(
                 raise HTTPException(status_code=401, detail="Invalid API key")
         
             data = await request.json()
-            logger.info(f"Received webhook data: {data}")
+            logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
         
             # Extract and validate required fields
             form_id = data.get("form_id")
@@ -86,14 +87,17 @@ async def webhook(
                 timezone=timezone
             )
         
+            logger.info(f"Creating sequence with data: {sequence_create}")
             db_sequence = sequence_service.create_sequence(db, sequence_create)
-        
-            # Schedule email generation
+            logger.info(f"Sequence created with ID: {db_sequence.id}")
+
+            logger.info(f"Adding task to background tasks: generate_and_store_email_sequence for sequence ID: {db_sequence.id}")
             background_tasks.add_task(
                 generate_and_store_email_sequence,
                 db_sequence.id,
                 sequence_create
             )
+            logger.info(f"Background task added successfully for sequence ID: {db_sequence.id}")
 
             return {"message": "Sequence creation initiated", "sequence_id": db_sequence.id}
     
