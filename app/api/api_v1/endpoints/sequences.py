@@ -59,7 +59,7 @@ async def webhook(
             email_structure = [
                 EmailSection(
                     name=section['name'],
-                    word_count=str(section['word_count']),  # Ensure word_count is a string
+                    word_count=str(section['word_count']),  # Make sure word_count is a string
                     description=section.get('description', f"Content for {section['name']}")
                 )
                 for section in data['email_structure']
