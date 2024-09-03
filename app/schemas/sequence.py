@@ -4,7 +4,7 @@ from datetime import datetime, time
 
 class EmailSection(BaseModel):
     name: str
-    word_count: int
+    word_count: str
     description: str
 
     @validator('word_count')

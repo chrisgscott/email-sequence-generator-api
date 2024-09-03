@@ -28,24 +28,24 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
     try:
         logger.info(f"Preparing to send email to {recipient_email}")
         
-        # Create an instance of the API class
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
         
         subscriber_timezone = ZoneInfo(sequence.timezone)
         
-        # Convert the UTC time from the database to the subscriber's local time
         local_scheduled_time = email.scheduled_for.replace(tzinfo=ZoneInfo('UTC')).astimezone(subscriber_timezone)
         
-        # Format the time for Brevo, including the UTC offset
         utc_offset = local_scheduled_time.strftime('%z')
         scheduled_at = local_scheduled_time.strftime(f'%Y-%m-%dT%H:%M:%S{utc_offset[:3]}:{utc_offset[3:]}')
+
+        # Ensure email.content is properly accessed
+        email_content = email.content if isinstance(email.content, dict) else email.content.dict()
 
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
             template_id=settings.BREVO_EMAIL_TEMPLATE_ID,
             params={
-                "subject": email.content.subject,
-                **email.content.content,
+                "subject": email_content.get("subject", "No Subject"),
+                **email_content,
                 **sequence.inputs
             },
             headers={
@@ -54,15 +54,13 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
             scheduled_at=scheduled_at
         )
         
-        logger.info(f"Sending email with subject: {email.content.subject}")
+        logger.info(f"Sending email with subject: {email_content.get('subject', 'No Subject')}")
         
-        # Log the API call details
         logger.info(f"Making API call to Brevo with the following details:")
         logger.info(f"To: {send_smtp_email.to}")
         logger.info(f"Params: {send_smtp_email.params}")
         logger.info(f"Headers: {send_smtp_email.headers}")
         
-        # Make the API call
         api_response = api_instance.send_transac_email(send_smtp_email)
         
         logger.info(f"Email sent successfully. Message ID: {api_response.message_id}")
