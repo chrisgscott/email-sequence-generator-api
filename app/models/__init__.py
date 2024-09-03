@@ -1,2 +1,3 @@
+from app.db.database import Base
 from .sequence import Sequence
-from .email import Email
+from .api_key import APIKey

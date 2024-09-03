@@ -84,6 +84,11 @@ Return the result as a JSON array with {batch_size} items.
     # API Key Settings
     API_KEY_LENGTH: int = 32
 
+    # Authentication Settings
+    SECRET_KEY: str = "cyrus-and-chris-and-adrienne-like-horses-and-like-stuff-69"  # Change this to a secure random string
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
 

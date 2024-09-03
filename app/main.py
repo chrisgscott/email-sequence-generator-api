@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security.api_key import APIKeyHeader
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.database import engine, Base, SessionLocal
@@ -10,6 +10,8 @@ from app.services.email_service import check_and_send_scheduled_emails, check_an
 from app.services import api_key_service
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from app.core.auth import get_current_active_user
+from app.schemas.user import User
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,8 +34,8 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to the Email Sequence Generator API"}
+def read_root(current_user: User = Depends(get_current_active_user)):
+    return {"message": f"Welcome to the Email Sequence Generator API, {current_user.email}"}
 
 scheduler = BackgroundScheduler()
 
@@ -46,8 +48,7 @@ scheduler.start()
 
 app.add_event_handler("shutdown", scheduler.shutdown)
 
-API_KEY_NAME = "X-API-Key"
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/token")
 
 def get_db():
     db = SessionLocal()
@@ -55,21 +56,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-async def validate_api_key(api_key: str = Depends(api_key_header), db: Session = Depends(get_db)):
-    if not api_key:
-        raise HTTPException(status_code=401, detail="API Key is missing")
-    if not api_key_service.validate_api_key(db, api_key):
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-    return api_key
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://dailyjournalprompts.co"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*", API_KEY_NAME],
-)
 
 if __name__ == "__main__":
     import uvicorn
