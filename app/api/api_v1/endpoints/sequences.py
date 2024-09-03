@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from fastapi import APIRouter, Depends, BackgroundTasks, Request, HTTPException
+from fastapi import APIRouter, Depends, BackgroundTasks, Request, HTTPException, Header
 from sqlalchemy.orm import Session
 from app.db.database import get_db, SessionLocal
 from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailSection
@@ -19,7 +19,7 @@ router = APIRouter()
 async def webhook(
     request: Request, 
     background_tasks: BackgroundTasks, 
-    api_key: str = Header(...), 
+    api_key: str = Header(..., convert_underscores=False), 
     db: Session = Depends(get_db)
 ):
     # Validate API key
