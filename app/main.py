@@ -12,6 +12,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.core.auth import get_current_active_user
 from app.schemas.user import User
+from contextlib import contextmanager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +51,7 @@ app.add_event_handler("shutdown", scheduler.shutdown)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/token")
 
+@contextmanager
 def get_db():
     db = SessionLocal()
     try:
