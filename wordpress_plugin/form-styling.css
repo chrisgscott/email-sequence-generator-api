@@ -1,0 +1,116 @@
+.journal-prompt-form {
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    border-radius: 8px;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  
+  .form-heading {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+  
+  .form-input,
+  .form-textarea,
+  .form-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 16px;
+  }
+  
+  /* Override default styles for specific input types */
+  .form-input[type="text"],
+  .form-input[type="email"],
+  .form-input[type="time"],
+  .form-select {
+    border: 1px solid #ddd;
+    background-color: white;
+    color: #333;
+  }
+  
+  /* Remove default styling for time input */
+  .form-input[type="time"]::-webkit-calendar-picker-indicator {
+    background: none;
+  }
+  
+  .form-textarea {
+    height: 100px;
+    resize: vertical;
+  }
+  
+  .form-submit-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #0096A2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .form-submit-btn:hover {
+    background-color: #73D7DF;
+  }
+  
+  /* Inline fields */
+  .inline-fields,
+  .inline-fields-equal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  
+  .inline-fields .form-group,
+  .inline-fields-equal .form-group {
+    flex: 1 1 100%;
+  }
+  
+  /* Ensure same height for timezone and preferred time inputs */
+  .inline-fields-equal .form-input,
+  .inline-fields-equal .form-select {
+    height: 40px;
+  }
+  
+  /* Media query for larger screens */
+  @media screen and (min-width: 768px) {
+    .inline-fields .form-group:first-child {
+      flex: 0 0 calc(40% - 10px);
+    }
+  
+    .inline-fields .form-group:last-child {
+      flex: 0 0 calc(60% - 10px);
+    }
+  
+    .inline-fields-equal .form-group {
+      flex: 0 0 calc(50% - 10px);
+    }
+  }
+  
+  /* Focus styles */
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #0096A2;
+    box-shadow: 0 0 0 2px rgba(0, 150, 162, 0.2);
+  }

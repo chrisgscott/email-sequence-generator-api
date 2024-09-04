@@ -1,0 +1,46 @@
+<form id="journalPromptForm" class="journal-prompt-form">
+    <div class="inline-fields">
+      <div class="form-group">
+        <label for="first_name" class="form-label">First Name:</label>
+        <input type="text" id="first_name" name="first_name" class="form-input" required
+               placeholder="e.g., John">
+      </div>
+      
+      <div class="form-group">
+        <label for="email" class="form-label">Email Address:</label>
+        <input type="email" id="email" name="email" class="form-input" required
+               placeholder="e.g., john@example.com">
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="interests_and_topics" class="form-label">Interests & Topics:</label>
+      <input id="interests_and_topics" name="interests_and_topics" class="form-input" required
+                placeholder="e.g., Personal growth, meditation, photography, travel, cooking">
+    </div>
+    
+    <div class="form-group">
+      <label for="goals_and_aspirations" class="form-label">Goals & Aspirations:</label>
+      <input id="goals_and_aspirations" name="goals_and_aspirations" class="form-input" required
+                placeholder="e.g., Improve work-life balance, learn a new language, start a side business">
+    </div>
+  
+    <div class="inline-fields-equal">
+      <div class="form-group">
+        <label for="timezone" class="form-label">Your Timezone:</label>
+        <select id="timezone" name="timezone" class="form-select" required>
+          <!-- Options will be populated by JavaScript -->
+        </select>
+      </div>
+  
+      <div class="form-group">
+        <label for="preferred_time" class="form-label">Preferred Delivery Time:</label>
+        <input type="time" id="preferred_time" name="preferred_time" class="form-input" required value="07:30">
+      </div>
+    </div>
+    
+    <button type="submit" class="form-submit-btn">Let's get journaling!</button>
+  </form>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.33/moment-timezone-with-data.min.js"></script>
