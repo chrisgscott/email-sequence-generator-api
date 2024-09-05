@@ -10,6 +10,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.rate_limiter import openai_limiter
 import time
 from zoneinfo import ZoneInfo
+from functools import lru_cache
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -187,56 +188,44 @@ def validate_email_content(email, email_structure):
             return False
     return 'subject' in email and email['subject'].strip()
 
-# Add this after line 88
-# for email in emails_data:
-#    if not validate_email_content(email, email_structure):
-#        logger.error(f"Invalid email content structure: {email}")
-#        raise AppException("")
+@lru_cache(maxsize=100)
+async def cached_generate_demo_prompt(interests: str, goals: str) -> Dict[str, str]:
+    return await generate_demo_prompt(interests, goals)
 
-async def generate_demo_prompt(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection]) -> Dict[str, Any]:
-    sections_prompt = "\n".join([
-        settings.OPENAI_SECTIONS_PROMPT.format(
-            index=i+1,
-            name=section.name,
-            description=section.description,
-            word_count=section.word_count
-        ) for i, section in enumerate(email_structure)
-    ])
+async def generate_demo_prompt(interests: str, goals: str) -> Dict[str, str]:
+    prompt = f"""Generate a single journal prompt based on the following:
+Interests: {interests}
+Goals: {goals}
 
-    prompt = settings.OPENAI_DEMO_PROMPT.format(
-        topic=topic,
-        inputs=json.dumps(inputs),
-        sections_prompt=sections_prompt
-    )
+Provide:
+1. journal_prompt: A specific, actionable prompt for today's journal entry (50-100 words)
+2. wrap_up: A brief, encouraging wrap-up (20-30 words)
+
+Return the result as a JSON object."""
 
     json_structure = {
         "type": "object",
         "properties": {
-            "content": {
-                "type": "object",
-                "properties": {
-                    section.name: {
-                        "type": "string",
-                        "description": f"Content for the '{section.name}' section"
-                    } for section in email_structure
-                }
-            }
+            "journal_prompt": {"type": "string"},
+            "wrap_up": {"type": "string"}
         },
-        "required": ["content"]
+        "required": ["journal_prompt", "wrap_up"]
     }
 
-    response: openai.ChatCompletion = await openai.ChatCompletion.acreate(
-        model=settings.OPENAI_MODEL,
+    response = await openai.ChatCompletion.acreate(
+        model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that generates content for email sequences."},
+            {"role": "system", "content": "You are a helpful assistant that generates journal prompts."},
             {"role": "user", "content": prompt}
         ],
         functions=[{
             "name": "generate_demo_prompt",
-            "description": "Generate a demo prompt based on the given topic and inputs",
+            "description": "Generate a demo journal prompt",
             "parameters": json_structure
         }],
-        function_call={"name": "generate_demo_prompt"}
+        function_call={"name": "generate_demo_prompt"},
+        temperature=0.7,
+        max_tokens=300
     )
 
     return json.loads(response.choices[0].function_call.arguments)
