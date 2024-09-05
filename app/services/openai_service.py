@@ -193,7 +193,7 @@ async def cached_generate_demo_prompt(interests: str, goals: str) -> Dict[str, s
     return await generate_demo_prompt(interests, goals)
 
 async def generate_demo_prompt(interests: str, goals: str) -> Dict[str, str]:
-    prompt = f"""Generate a single journal prompt based on the following:
+    prompt = f"""Generate a single email for a journal prompt sequence. The email should be tailored to the user's interests and goals, but focus on a specific aspect rather than trying to cover everything.
 Interests: {interests}
 Goals: {goals}
 
