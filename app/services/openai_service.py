@@ -192,3 +192,51 @@ def validate_email_content(email, email_structure):
 #    if not validate_email_content(email, email_structure):
 #        logger.error(f"Invalid email content structure: {email}")
 #        raise AppException("")
+
+async def generate_demo_prompt(topic: str, inputs: Dict[str, str], email_structure: List[EmailSection]) -> Dict[str, Any]:
+    sections_prompt = "\n".join([
+        settings.OPENAI_SECTIONS_PROMPT.format(
+            index=i+1,
+            name=section.name,
+            description=section.description,
+            word_count=section.word_count
+        ) for i, section in enumerate(email_structure)
+    ])
+
+    prompt = settings.OPENAI_DEMO_PROMPT.format(
+        topic=topic,
+        inputs=json.dumps(inputs),
+        sections_prompt=sections_prompt
+    )
+
+    json_structure = {
+        "type": "object",
+        "properties": {
+            "content": {
+                "type": "object",
+                "properties": {
+                    section.name: {
+                        "type": "string",
+                        "description": f"Content for the '{section.name}' section"
+                    } for section in email_structure
+                }
+            }
+        },
+        "required": ["content"]
+    }
+
+    response: openai.ChatCompletion = await openai.ChatCompletion.acreate(
+        model=settings.OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that generates content for email sequences."},
+            {"role": "user", "content": prompt}
+        ],
+        functions=[{
+            "name": "generate_demo_prompt",
+            "description": "Generate a demo prompt based on the given topic and inputs",
+            "parameters": json_structure
+        }],
+        function_call={"name": "generate_demo_prompt"}
+    )
+
+    return json.loads(response.choices[0].function_call.arguments)
