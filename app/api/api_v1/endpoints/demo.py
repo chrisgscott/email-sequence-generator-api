@@ -3,6 +3,9 @@ from app.services import openai_service
 from app.schemas.demo import DemoPromptRequest, DemoPromptResponse
 from app.core.config import settings
 from app.services.openai_service import cached_generate_demo_prompt
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -15,4 +18,5 @@ async def generate_demo_prompt(request: DemoPromptRequest):
             wrap_up=demo_prompt["wrap_up"]
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error in generate_demo_prompt: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
