@@ -213,7 +213,7 @@ Return the result as a JSON object."""
     }
 
     response = await openai.ChatCompletion.acreate(
-        model="gpt-4o-mini",
+        model=settings.OPENAI_MODEL,
         messages=[
             {"role": "system", "content": "You are a helpful assistant that generates journal prompts."},
             {"role": "user", "content": prompt}
@@ -228,4 +228,16 @@ Return the result as a JSON object."""
         max_tokens=300
     )
 
-    return json.loads(response.choices[0].function_call.arguments)
+    if hasattr(response.choices[0].message, 'function_call'):
+        return json.loads(response.choices[0].message.function_call.arguments)
+    else:
+        # If function_call is not present, try to parse the content directly
+        content = response.choices[0].message.content
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError:
+            # If parsing fails, return a default response
+            return {
+                "journal_prompt": "We couldn't generate a specific prompt. Write about your day and reflect on your progress towards your goals.",
+                "wrap_up": "Keep pushing forward. Every step counts!"
+            }

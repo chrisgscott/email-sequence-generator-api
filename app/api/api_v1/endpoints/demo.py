@@ -19,4 +19,7 @@ async def generate_demo_prompt(request: DemoPromptRequest):
         )
     except Exception as e:
         logger.error(f"Error in generate_demo_prompt: {str(e)}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        return DemoPromptResponse(
+            journal_prompt="We encountered an error generating your prompt. Please try again later.",
+            wrap_up="Every challenge is an opportunity for growth."
+        )
