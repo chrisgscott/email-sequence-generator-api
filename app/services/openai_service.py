@@ -198,7 +198,7 @@ Interests: {interests}
 Goals: {goals}
 
 Provide:
-1. journal_prompt: A specific, actionable prompt for today's journal entry (50-100 words)
+1. journal_prompt: A specific, actionable prompt for today's journal entry. Try not to always start with the words 'Reflect on...' (50-100 words)
 2. wrap_up: A brief, encouraging wrap-up (20-30 words)
 
 Return the result as a JSON object."""
