@@ -5,6 +5,7 @@ from app.models.sequence import Sequence
 from app.schemas.sequence import SequenceCreate, EmailSection
 from app.services import sequence_service
 from app.services.sequence_generation import generate_and_store_email_sequence
+from app.services.brevo_service import subscribe_to_brevo_list
 from loguru import logger
 from typing import List
 from datetime import time
@@ -51,6 +52,15 @@ async def process_submission(submission: SubmissionQueue):
         )
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         sequence_id = db_sequence.id
+
+        # Subscribe the email to Brevo list
+        try:
+            subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
+            logger.info(f"Email {submission.recipient_email} subscribed to Brevo list {submission.brevo_list_id}")
+        except Exception as brevo_error:
+            logger.error(f"Failed to subscribe email to Brevo: {str(brevo_error)}")
+            sentry_sdk.capture_exception(brevo_error)
+            # Continue with the process even if Brevo subscription fails
 
         await generate_and_store_email_sequence(sequence_id, sequence_create)
     except Exception as e:
