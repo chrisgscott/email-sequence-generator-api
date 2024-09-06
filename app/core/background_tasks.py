@@ -53,17 +53,22 @@ async def process_submission(submission: SubmissionQueue):
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         sequence_id = db_sequence.id
 
-        # Add Brevo subscription step here
-        logger.info(f"Attempting to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
+        # Move Brevo subscription process here
+        logger.info(f"Starting Brevo subscription process for email: {submission.recipient_email}, list ID: {submission.brevo_list_id}")
         try:
-            await subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
-            logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
+            subscription_result = await subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
+            if subscription_result:
+                logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
+            else:
+                logger.info(f"Email {submission.recipient_email} already exists in Brevo list {submission.brevo_list_id}")
         except Exception as brevo_error:
             logger.error(f"Failed to subscribe email to Brevo: {str(brevo_error)}")
             sentry_sdk.capture_exception(brevo_error)
             # Continue with the process even if Brevo subscription fails
 
+        logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
         await generate_and_store_email_sequence(sequence_id, sequence_create)
+        logger.info(f"Completed email sequence generation for sequence_id: {sequence_id}")
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Error processing submission: {str(e)}")
