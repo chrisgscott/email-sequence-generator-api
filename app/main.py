@@ -15,6 +15,8 @@ from app.schemas.user import User
 from contextlib import contextmanager
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
+from asyncio import Queue
+from app.core.background_tasks import process_submission_queue
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +73,12 @@ def get_db():
 @app.get("/sentry-debug")
 async def trigger_error():
     division_by_zero = 1 / 0
+
+queue = Queue()
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(process_submission_queue(queue))
 
 if __name__ == "__main__":
     import uvicorn

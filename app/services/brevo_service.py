@@ -17,8 +17,11 @@ async def subscribe_to_brevo_list(email: str, list_id: int):
 
     async with aiohttp.ClientSession() as session:
         try:
+            logger.debug(f"Sending POST request to Brevo API")
             async with session.post(url, headers=headers, json=payload) as response:
                 logger.debug(f"Received response from Brevo. Status: {response.status}")
+                response_text = await response.text()
+                logger.debug(f"Response body: {response_text}")
                 if response.status == 201:
                     logger.info(f"Contact {email} successfully added to Brevo list {list_id}")
                     return True
@@ -26,8 +29,7 @@ async def subscribe_to_brevo_list(email: str, list_id: int):
                     logger.info(f"Contact {email} was already in Brevo list {list_id}")
                     return True
                 else:
-                    error_message = await response.text()
-                    logger.error(f"Failed to add contact to Brevo list: {error_message}")
+                    logger.error(f"Failed to add contact to Brevo list. Status: {response.status}, Body: {response_text}")
                     return False
         except aiohttp.ClientError as e:
             logger.error(f"Error adding contact to Brevo list: {str(e)}")

@@ -13,6 +13,7 @@ from app.services import sequence_generation
 from datetime import datetime
 from app.core.auth import get_current_active_user
 from app.schemas.user import User
+from app.core.background_tasks import SubmissionQueue
 
 router = APIRouter()
 
@@ -91,16 +92,25 @@ async def webhook(
             db_sequence = sequence_service.create_sequence(db, sequence_create)
             logger.info(f"Sequence created with ID: {db_sequence.id}")
 
-            logger.info(f"Adding task to background tasks: generate_and_store_email_sequence for sequence ID: {db_sequence.id}")
-            background_tasks.add_task(
-                generate_and_store_email_sequence,
-                db_sequence.id,
-                sequence_create
+            submission = SubmissionQueue(
+                form_id=form_id,
+                topic=topic,
+                recipient_email=recipient_email,
+                brevo_list_id=brevo_list_id,
+                total_emails=sequence_settings['total_emails'],
+                days_between_emails=sequence_settings['days_between_emails'],
+                email_structure=email_structure,
+                inputs=inputs,
+                topic_depth=topic_depth,
+                preferred_time=preferred_time_obj,
+                timezone=timezone
             )
-            logger.info(f"Background task added successfully for sequence ID: {db_sequence.id}")
 
-            return {"message": "Sequence creation initiated", "sequence_id": db_sequence.id}
+            # Add the submission to the queue
+            await queue.put(submission)
+
+            return {"message": "Submission queued successfully"}
     
     except Exception as e:
-        logger.error(f"Unexpected error in webhook: {str(e)}")
-        raise AppException("An unexpected error occurred", status_code=500)
+        logger.error(f"Error processing webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
