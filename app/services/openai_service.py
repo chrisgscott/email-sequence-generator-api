@@ -11,6 +11,7 @@ from app.core.rate_limiter import openai_limiter
 import time
 from zoneinfo import ZoneInfo
 from functools import lru_cache
+import sentry_sdk
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -170,15 +171,19 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)}")
         return processed_emails
     except openai.error.APIError as e:
+        sentry_sdk.capture_exception(e)
         logger.error(f"OpenAI API error for batch starting at {start_index}: {str(e)}")
         raise AppException(f"OpenAI API error: {str(e)}", status_code=500)
     except openai.error.Timeout as e:
+        sentry_sdk.capture_exception(e)
         logger.error(f"OpenAI API timeout for batch starting at {start_index}: {str(e)}")
         raise AppException(f"OpenAI API timeout: {str(e)}", status_code=504)
     except openai.error.RateLimitError as e:
+        sentry_sdk.capture_exception(e)
         logger.error(f"OpenAI API rate limit exceeded for batch starting at {start_index}: {str(e)}")
         raise AppException(f"OpenAI API rate limit exceeded: {str(e)}", status_code=429)
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.error(f"Unexpected error in generate_email_sequence for batch starting at {start_index}: {str(e)}")
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 

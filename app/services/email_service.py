@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import AppException
 from typing import Dict
 from filelock import FileLock, Timeout
+import sentry_sdk
 
 logger = logging.getLogger(__name__)
 
@@ -193,9 +194,11 @@ def check_and_schedule_emails():
                         else:
                             logger.warning(f"Email {email.id} for sequence {sequence.id} already sent to Brevo")
                     except AppException as e:
+                        sentry_sdk.capture_exception(e)
                         logger.error(f"AppException scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
                         db.rollback()
                     except Exception as e:
+                        sentry_sdk.capture_exception(e)
                         logger.error(f"Unexpected error scheduling email {email.id} for sequence {sequence.id}: {str(e)}")
                         db.rollback()
                 

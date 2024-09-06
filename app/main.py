@@ -13,6 +13,8 @@ from apscheduler.triggers.cron import CronTrigger
 from app.core.auth import get_current_active_user
 from app.schemas.user import User
 from contextlib import contextmanager
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastAPIIntegration
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +22,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 Base.metadata.create_all(bind=engine)
+
+sentry_sdk.init(
+    dsn=settings.SENTRY_DSN,
+    integrations=[FastAPIIntegration()],
+    traces_sample_rate=1.0,
+    environment=settings.ENVIRONMENT
+)
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 

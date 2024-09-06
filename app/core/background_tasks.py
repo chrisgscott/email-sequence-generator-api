@@ -8,6 +8,7 @@ from app.services.sequence_generation import generate_and_store_email_sequence
 from loguru import logger
 from typing import List
 from datetime import time
+import sentry_sdk
 
 class SubmissionQueue(BaseModel):
     form_id: str
@@ -53,6 +54,7 @@ async def process_submission(submission: SubmissionQueue):
 
         await generate_and_store_email_sequence(sequence_id, sequence_create)
     except Exception as e:
+        sentry_sdk.capture_exception(e)
         logger.error(f"Error processing submission: {str(e)}")
         raise
     finally:

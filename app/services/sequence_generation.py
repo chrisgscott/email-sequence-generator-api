@@ -72,17 +72,20 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
                 # Update start_date for the next batch
                 start_date += timedelta(days=len(batch_emails) * sequence.days_between_emails)
 
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as e:
+                sentry_sdk.capture_exception(e)
                 logger.error(f"Timeout occurred while generating batch {batch_number} for sequence_id: {sequence_id}")
                 sequence_service.update_sequence_progress(db, sequence_id, progress)
                 db.commit()
                 raise AppException("Timeout occurred while generating email sequence", status_code=504)
             except AppException as e:
+                sentry_sdk.capture_exception(e)
                 logger.error(f"AppException generating batch {batch_number} for sequence_id: {sequence_id}: {str(e)}")
                 sequence_service.mark_sequence_failed(db, sequence_id, str(e))
                 db.commit()
                 raise
             except Exception as e:
+                sentry_sdk.capture_exception(e)
                 logger.error(f"Unexpected error generating batch {batch_number} for sequence_id: {sequence_id}: {str(e)}")
                 sequence_service.mark_sequence_failed(db, sequence_id, str(e))
                 db.commit()
