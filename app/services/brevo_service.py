@@ -13,9 +13,12 @@ async def subscribe_to_brevo_list(email: str, list_id: int):
     }
     payload = {"emails": [email]}
 
+    logger.debug(f"Sending Brevo subscription request. URL: {url}, Payload: {payload}")
+
     async with aiohttp.ClientSession() as session:
         try:
             async with session.post(url, headers=headers, json=payload) as response:
+                logger.debug(f"Received response from Brevo. Status: {response.status}")
                 if response.status == 201:
                     logger.info(f"Contact {email} successfully subscribed to Brevo list {list_id}")
                     return await response.json()
