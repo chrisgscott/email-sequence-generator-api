@@ -24,9 +24,10 @@ logger = logging.getLogger(__name__)
 Base.metadata.create_all(bind=engine)
 
 sentry_sdk.init(
-    dsn=settings.SENTRY_DSN,
+    dsn="https://ab417b3bbd74353cd1ca788210905746@o4507906212560896.ingest.us.sentry.io/4507906214592512",
     integrations=[FastAPIIntegration()],
     traces_sample_rate=1.0,
+    profiles_sample_rate=1.0,
     environment=settings.ENVIRONMENT
 )
 
@@ -67,6 +68,10 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.get("/sentry-debug")
+async def trigger_error():
+    division_by_zero = 1 / 0
 
 if __name__ == "__main__":
     import uvicorn
