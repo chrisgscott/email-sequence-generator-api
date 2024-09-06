@@ -35,14 +35,17 @@ async def process_submission_queue(queue: Queue):
             queue.task_done()
 
 async def process_submission(submission: SubmissionQueue):
+    logger.info(f"Starting process_submission for email: {submission.recipient_email}")
     db = SessionLocal()
     try:
         # Attempt to subscribe to Brevo list first
         logger.info(f"Attempting to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
         subscription_success = await subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
         
-        if not subscription_success:
-            logger.error(f"Failed to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}. Continuing with sequence creation.")
+        if subscription_success:
+            logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
+        else:
+            logger.warning(f"Failed to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}. Continuing with sequence creation.")
 
         sequence_create = SequenceCreate(
             form_id=submission.form_id,
@@ -67,3 +70,4 @@ async def process_submission(submission: SubmissionQueue):
         sentry_sdk.capture_exception(e)
     finally:
         db.close()
+        logger.info(f"Finished process_submission for email: {submission.recipient_email}")
