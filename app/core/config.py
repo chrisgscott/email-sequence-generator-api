@@ -93,7 +93,7 @@ Return the result as a JSON array with {batch_size} items.
     DATABASE_URL: str = os.getenv("DATABASE_URL")  # Connection string for the database
 
     # Sentry DSN
-    SENTRY_DSN: str = ""
+    SENTRY_DSN: str = os.getenv("SENTRY_DSN")
 
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from

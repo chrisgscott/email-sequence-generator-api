@@ -14,7 +14,7 @@ from app.core.auth import get_current_active_user
 from app.schemas.user import User
 from contextlib import contextmanager
 import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastAPIIntegration
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 Base.metadata.create_all(bind=engine)
 
 sentry_sdk.init(
-    dsn="https://ab417b3bbd74353cd1ca788210905746@o4507906212560896.ingest.us.sentry.io/4507906214592512",
-    integrations=[FastAPIIntegration()],
+    dsn=settings.SENTRY_DSN,
+    integrations=[FastApiIntegration()],
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
     environment=settings.ENVIRONMENT
