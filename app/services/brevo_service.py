@@ -20,18 +20,18 @@ async def subscribe_to_brevo_list(email: str, list_id: int):
             async with session.post(url, headers=headers, json=payload) as response:
                 logger.debug(f"Received response from Brevo. Status: {response.status}")
                 if response.status == 201:
-                    logger.info(f"Contact {email} successfully subscribed to Brevo list {list_id}")
-                    return await response.json()
+                    logger.info(f"Contact {email} successfully added to Brevo list {list_id}")
+                    return True
                 elif response.status == 204:
-                    logger.info(f"Contact {email} already exists in Brevo list {list_id}")
-                    return None
+                    logger.info(f"Contact {email} was already in Brevo list {list_id}")
+                    return True
                 else:
                     error_message = await response.text()
-                    logger.error(f"Failed to subscribe email to Brevo. Status: {response.status}, Error: {error_message}")
-                    raise Exception(f"Failed to subscribe email: {error_message}")
+                    logger.error(f"Failed to add contact to Brevo list: {error_message}")
+                    return False
         except aiohttp.ClientError as e:
-            logger.error(f"Error subscribing email to Brevo: {str(e)}")
-            raise
+            logger.error(f"Error adding contact to Brevo list: {str(e)}")
+            return False
 
 # Keep the existing SDK-based function for other parts of the application that might use it
 def subscribe_to_brevo_list_sdk(email: str, list_id: int):
