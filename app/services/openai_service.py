@@ -10,7 +10,9 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from app.core.rate_limiter import openai_limiter
 import time
 from zoneinfo import ZoneInfo
-from functools import lru_cache
+from functools import lru_cache, wraps
+from cachetools import TTLCache
+import asyncio
 import sentry_sdk
 
 openai.api_key = settings.OPENAI_API_KEY
@@ -193,7 +195,23 @@ def validate_email_content(email, email_structure):
             return False
     return 'subject' in email and email['subject'].strip()
 
-@lru_cache(maxsize=100)
+# Create a cache with a maximum of 100 items and a 5-minute TTL
+cache = TTLCache(maxsize=100, ttl=300)
+
+def async_lru_cache(maxsize=100, ttl=300):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            key = str(args) + str(kwargs)
+            if key in cache:
+                return cache[key]
+            result = await func(*args, **kwargs)
+            cache[key] = result
+            return result
+        return wrapper
+    return decorator
+
+@async_lru_cache(maxsize=100, ttl=300)
 async def cached_generate_demo_prompt(interests: str, goals: str) -> Dict[str, str]:
     return await generate_demo_prompt(interests, goals)
 
