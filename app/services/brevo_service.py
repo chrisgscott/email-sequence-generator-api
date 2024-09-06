@@ -27,7 +27,7 @@ async def subscribe_to_brevo_list(email: str, list_id: int):
                     return None
                 else:
                     error_message = await response.text()
-                    logger.error(f"Failed to subscribe email to Brevo: {error_message}")
+                    logger.error(f"Failed to subscribe email to Brevo. Status: {response.status}, Error: {error_message}")
                     raise Exception(f"Failed to subscribe email: {error_message}")
         except aiohttp.ClientError as e:
             logger.error(f"Error subscribing email to Brevo: {str(e)}")
