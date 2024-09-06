@@ -28,7 +28,6 @@ sentry_sdk.init(
     integrations=[FastApiIntegration()],
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
-    environment=settings.ENVIRONMENT
 )
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
