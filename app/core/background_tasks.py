@@ -53,10 +53,10 @@ async def process_submission(submission: SubmissionQueue):
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         sequence_id = db_sequence.id
 
-        # Subscribe the email to Brevo list
+        # Add Brevo subscription step here
         try:
-            subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
-            logger.info(f"Email {submission.recipient_email} subscribed to Brevo list {submission.brevo_list_id}")
+            await subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
+            logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
         except Exception as brevo_error:
             logger.error(f"Failed to subscribe email to Brevo: {str(brevo_error)}")
             sentry_sdk.capture_exception(brevo_error)
