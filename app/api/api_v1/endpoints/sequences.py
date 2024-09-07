@@ -73,7 +73,7 @@ async def webhook(
             except ValueError:
                 preferred_time_obj = datetime.strptime(preferred_time, "%H:%M").time()
 
-            sequence_create = SequenceCreate(
+            submission = SubmissionQueue(
                 form_id=form_id,
                 topic=topic,
                 recipient_email=recipient_email,
@@ -86,20 +86,10 @@ async def webhook(
                 preferred_time=preferred_time_obj,
                 timezone=timezone
             )
-        
-            logger.info(f"Creating sequence with data: {sequence_create}")
-            db_sequence = sequence_service.create_sequence(db, sequence_create)
-            logger.info(f"Sequence created with ID: {db_sequence.id}")
 
-            logger.info(f"Adding task to background tasks: generate_and_store_email_sequence for sequence ID: {db_sequence.id}")
-            background_tasks.add_task(
-                generate_and_store_email_sequence,
-                db_sequence.id,
-                sequence_create
-            )
-            logger.info(f"Background task added successfully for sequence ID: {db_sequence.id}")
+            background_tasks.add_task(process_submission, submission)
 
-            return {"message": "Sequence creation initiated", "sequence_id": db_sequence.id}
+            return {"message": "Sequence creation and email generation started"}
     
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
