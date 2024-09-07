@@ -5,6 +5,7 @@ from app.models.sequence import Sequence
 from app.schemas.sequence import SequenceCreate, EmailSection
 from app.services import sequence_service
 from app.services.sequence_generation import generate_and_store_email_sequence
+from app.services.brevo_service import subscribe_to_brevo_list
 from loguru import logger
 from typing import List
 from datetime import time
@@ -34,6 +35,7 @@ async def process_submission_queue(queue: Queue):
             queue.task_done()
 
 async def process_submission(submission: SubmissionQueue):
+    logger.info(f"Starting process_submission for email: {submission.recipient_email}")
     db = SessionLocal()
     try:
         sequence_create = SequenceCreate(
@@ -49,13 +51,28 @@ async def process_submission(submission: SubmissionQueue):
             preferred_time=submission.preferred_time,
             timezone=submission.timezone
         )
+        logger.info(f"Creating sequence for email: {submission.recipient_email}")
         db_sequence = sequence_service.create_sequence(db, sequence_create)
         sequence_id = db_sequence.id
+        logger.info(f"Sequence created with ID: {sequence_id}")
 
+        # Subscribe the email to the Brevo list
+        logger.info(f"Attempting to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
+        try:
+            subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
+            logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
+        except Exception as e:
+            logger.error(f"Failed to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}: {str(e)}")
+            # Optionally, you can decide whether to continue with email generation or not
+            # For now, we'll continue even if Brevo subscription fails
+
+        logger.info(f"Starting email generation for sequence ID: {sequence_id}")
         await generate_and_store_email_sequence(sequence_id, sequence_create)
+        logger.info(f"Completed email generation for sequence ID: {sequence_id}")
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        logger.error(f"Error processing submission: {str(e)}")
+        logger.error(f"Error processing submission for email {submission.recipient_email}: {str(e)}")
         raise
     finally:
+        logger.info(f"Closing database connection for email: {submission.recipient_email}")
         db.close()
