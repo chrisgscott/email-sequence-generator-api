@@ -57,13 +57,15 @@ async def process_submission(submission: SubmissionQueue):
         logger.info(f"Sequence created with ID: {sequence_id}")
 
         # Subscribe the email to the Brevo list
+        logger.info(f"About to attempt Brevo subscription for email: {submission.recipient_email}")
         logger.info(f"Attempting to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
         try:
             await subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
             logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
         except Exception as e:
             logger.error(f"Failed to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}: {str(e)}")
-            # You might want to raise an exception here if Brevo subscription is critical
+            # Optionally, you can decide whether to continue with email generation or not
+            # For now, we'll continue even if Brevo subscription fails
 
         logger.info(f"Starting email generation for sequence ID: {sequence_id}")
         await generate_and_store_email_sequence(sequence_id, sequence_create)
