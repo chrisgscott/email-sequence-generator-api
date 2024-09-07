@@ -1,28 +1,35 @@
 # Email Sequence Generator API Project Roadmap
 
-Last updated: 2024-09-07
+Last updated: 2024-09-08
 
 ## High Priority Tasks
 
-### Basic Content Moderation
-- [ ] Implement basic filtering or review system for generated content
-
-### Email Sequence Generation Improvements
-- [ ] Implement content diversity checks to avoid repetitive emails
-- [ ] Add support for dynamic content insertion based on user behavior or external data
-- [ ] Implement a mechanism to ensure consistent tone and style across all emails in a sequence
+### Boilerplate Niche Site Development
+- [ ] Design and implement a basic site structure
+- [ ] Create a setup wizard for rapid niche site configuration
+  - [ ] Implement niche selection and customization options
+  - [ ] Create interface for defining email sequence details and structure
+- [ ] Develop API integration module
+  - [ ] Implement authentication and API key management
+  - [ ] Create functions for interacting with email sequence endpoints
+- [ ] Implement SEO content generation module
+  - [ ] Develop keyword research integration
+  - [ ] Create content strategy generator based on hub and spoke model
+  - [ ] Implement blog post generation using email sequence content
 
 ### API Enhancements
-- [ ] Add endpoints for checking sequence generation progress
-- [ ] Implement endpoint for manually triggering email sends
-- [ ] Create endpoint for updating or canceling scheduled emails
-- [ ] Add an endpoint for retrieving generated email content for preview
+- [ ] Add endpoint for bulk content generation (email sequences + blog posts)
+- [ ] Implement endpoint for generating SEO-optimized content based on email sequences
+- [ ] Create endpoint for keyword research and content strategy generation
 
-### System Resilience and Error Handling
-- [ ] Add health check endpoints
-- [ ] Implement circuit breaker pattern for inter-service communication
-- [ ] Implement a queue system for webhook requests
-- [ ] Implement a retry mechanism for failed email generations within a batch
+### Deployment System
+- [ ] Develop one-click deployment process for the boilerplate site
+- [ ] Create documentation for the deployment and setup process
+
+### Performance and Scalability
+- [ ] Optimize the site generation process for speed
+- [ ] Implement caching mechanisms for frequently accessed data
+- [ ] Set up a scalable hosting infrastructure for multiple niche sites
 
 ## Medium Priority (Important for Robustness and User Experience)
 
@@ -86,9 +93,10 @@ Last updated: 2024-09-07
 
 ## To Consider (Future Ideas and Enhancements)
 
-### Generator Setup Tool
-- [ ] Develop a tool for creating form code, JSON, and scripts to quickly set up new generators
-- [ ] Automate the generation of information needed for WordPress plugin admin screens
+### WordPress Theme Development
+- [ ] Develop a complete WordPress theme optimized for email sequence generators
+- [ ] Include necessary pages and pre-built Elementor templates in the theme
+- [ ] Integrate the enhanced plugin functionality directly into the theme
 
 ### Monetization Features
 - [ ] Implement a system for injecting Calls to Action for monetized content into emails
