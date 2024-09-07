@@ -13,6 +13,7 @@ from app.services import sequence_generation
 from datetime import datetime
 from app.core.auth import get_current_active_user
 from app.schemas.user import User
+from app.core.background_tasks import SubmissionQueue, process_submission
 
 router = APIRouter()
 
