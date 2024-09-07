@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../niche-site-boilerplate"
 		}
 	],
 	"settings": {}
