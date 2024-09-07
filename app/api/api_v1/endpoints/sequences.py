@@ -14,6 +14,7 @@ from datetime import datetime
 from app.core.auth import get_current_active_user
 from app.schemas.user import User
 from app.core.background_tasks import SubmissionQueue
+from app.main import queue
 
 router = APIRouter()
 

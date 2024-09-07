@@ -44,6 +44,8 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+queue = Queue()
+
 app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
@@ -74,8 +76,6 @@ def get_db():
 @app.get("/sentry-debug")
 async def trigger_error():
     division_by_zero = 1 / 0
-
-queue = Queue()
 
 @app.on_event("startup")
 async def startup_event():
