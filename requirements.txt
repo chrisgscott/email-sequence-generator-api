@@ -32,3 +32,4 @@ psutil==6.0.0
 python-wordpress-xmlrpc
 jinja2
 python-multipart
+itsdangerous
