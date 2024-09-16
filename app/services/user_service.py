@@ -35,7 +35,7 @@ def create_user_with_api_key(db: Session, user: UserCreate):
     return db_user, api_key
 
 def send_password_reset_email(db: Session, email: str, reset_token: str):
-    reset_link = f"{settings.BASE_URL}/admin/reset-password/{reset_token}"
+    reset_link = f"{settings.BASE_URL}/reset-password/{reset_token}"
     
     email_content = EmailContent(
         subject="Password Reset Request",

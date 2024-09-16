@@ -102,7 +102,7 @@ Return the result as a JSON array with {batch_size} items.
     WORDPRESS_PASSWORD: Optional[str] = None
 
     # Password Reset Configuration
-    BASE_URL: str = "https://plankton-app-qivtq.ondigitalocean.app"  # Replace with your actual base URL
+    BASE_URL: str = "https://plankton-app-qivtq.ondigitalocean.app/admin"  # Replace with your actual base URL
     BREVO_PASSWORD_RESET_TEMPLATE_ID: int = 2  # Replace with your actual template ID for password reset emails
     PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
 
