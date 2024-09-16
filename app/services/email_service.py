@@ -17,6 +17,8 @@ from app.core.exceptions import AppException
 from typing import Dict
 from filelock import FileLock, Timeout
 import sentry_sdk
+import time
+import psutil
 
 logger = logging.getLogger(__name__)
 
@@ -84,22 +86,30 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         logger.error(f"Unexpected error when sending email: {e}")
         raise AppException(f"Unexpected error: {str(e)}", status_code=500)
 
+def log_memory_usage():
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    logger.info(f"Memory usage: {memory_info.rss / 1024 / 1024:.2f} MB")
+
 def check_and_send_scheduled_emails():
-    lock = FileLock("/tmp/check_and_send_scheduled_emails.lock", timeout=300)  # 5 minutes timeout
+    lock = FileLock("/tmp/check_and_send_scheduled_emails.lock", timeout=300)
     try:
         with lock:
-            db = SessionLocal()
-            try:
+            with get_db() as db:
+                log_memory_usage()  # Log memory usage at start
                 current_date = datetime.now(TIMEZONE)
                 logger.info(f"Checking for emails scheduled up to {current_date}")
                 
                 emails_to_send = db.query(Email).filter(
                     Email.scheduled_for <= current_date,
                     Email.sent_to_brevo == False
-                ).all()
+                ).limit(100).all()  # Process max 100 emails per batch
                 
                 logger.info(f"Found {len(emails_to_send)} emails to send")
                 
+                error_count = 0
+                max_errors = 10
+
                 for email in emails_to_send:
                     try:
                         if email.sent_to_brevo:
@@ -115,18 +125,21 @@ def check_and_send_scheduled_emails():
                         db.commit()
                         logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
                     except Exception as e:
+                        error_count += 1
+                        if error_count >= max_errors:
+                            logger.error("Too many errors, stopping processing")
+                            break
                         logger.error(f"Error sending email {email.id}: {str(e)}")
                         db.rollback()
-            except Exception as e:
-                logger.error(f"Error in check_and_send_scheduled_emails: {str(e)}")
-            finally:
-                db.close()
+
+                log_memory_usage()  # Log memory usage at end
+                time.sleep(60)  # Sleep for 60 seconds after processing a batch
     except Timeout:
         logger.info("Another instance is already running. Exiting.")
 
 def send_email_background(db: Session, recipient_email: str, email: EmailContent, inputs: dict):
     try:
-        message_id = send_email_to_brevo(recipient_email, email, inputs)
+        message_id = send_email_to_brevo(db, recipient_email, email, inputs)
         # Here you might want to update the database to mark the email as sent
         # For example:
         # db.query(Email).filter(Email.id == email.id).update({"sent": True, "message_id": message_id})
@@ -135,7 +148,7 @@ def send_email_background(db: Session, recipient_email: str, email: EmailContent
         logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
         # Here you might want to handle the error, maybe retry later or mark as failed in the database
 
-def send_email_to_brevo(to_email: str, email_content: EmailContent, inputs: dict):
+def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent, inputs: dict):
     configuration = sib_api_v3_sdk.Configuration()
     configuration.api_key['api-key'] = settings.BREVO_API_KEY
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))

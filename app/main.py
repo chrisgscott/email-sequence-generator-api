@@ -52,7 +52,7 @@ scheduler = BackgroundScheduler()
 def locked_check_and_send_scheduled_emails():
     check_and_send_scheduled_emails()
 
-scheduler.add_job(locked_check_and_send_scheduled_emails, CronTrigger(minute="*/5")) #Set to 5 minutes for testing. Change this to something more appropriate for production.
+scheduler.add_job(locked_check_and_send_scheduled_emails, CronTrigger(minute="*/30")) #Set to 5 minutes for testing. Change this to something more appropriate for production.
 scheduler.add_job(check_and_schedule_emails, CronTrigger(hour="0", minute="0"))  # Run daily at midnight
 scheduler.start()
 
