@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from app.db.database import get_db, SessionLocal
-from app.core.auth import get_password_hash
+from app.core.auth import get_password_hash, verify_password
 from app.models.user import User
 from app.models.api_key import APIKey
 from app.services import user_service
@@ -17,8 +17,11 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-def get_admin_user(request: Request):
-    user = request.session.get("admin_user")
+def get_admin_user(request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("admin_user")
+    if not email:
+        raise HTTPException(status_code=302, detail="Not authenticated")
+    user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=302, detail="Not authenticated")
     return user
@@ -28,11 +31,12 @@ async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @router.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if username == "admin" and password == "adminpassword":  # Replace with secure authentication
-        request.session["admin_user"] = username
+async def login(request: Request, email: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if user and verify_password(password, user.hashed_password):
+        request.session["admin_user"] = user.email
         return RedirectResponse(url="/admin/users", status_code=303)
-    return RedirectResponse(url="/admin/login", status_code=303)
+    return RedirectResponse(url="/admin/login?error=Invalid credentials", status_code=303)
 
 @router.get("/logout")
 async def logout(request: Request):
@@ -40,7 +44,7 @@ async def logout(request: Request):
     return RedirectResponse(url="/admin/login", status_code=302)
 
 @router.get("/users", response_class=HTMLResponse)
-async def list_users(request: Request, db: Session = Depends(get_db), admin_user: str = Depends(get_admin_user)):
+async def list_users(request: Request, db: Session = Depends(get_db), admin_user: User = Depends(get_admin_user)):
     users = db.query(User).all()
     return templates.TemplateResponse("users.html", {"request": request, "users": users})
 
