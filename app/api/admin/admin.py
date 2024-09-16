@@ -168,7 +168,7 @@ async def forgot_password(request: Request, email: str = Form(...)):
             db.commit()
 
             try:
-                await send_password_reset_email(db, user.email, reset_token)
+                send_password_reset_email(db, user.email, reset_token)
             except Exception as e:
                 logger.error(f"Failed to send password reset email to {email}: {str(e)}")
                 # Optionally, you can roll back the database changes if the email fails to send
