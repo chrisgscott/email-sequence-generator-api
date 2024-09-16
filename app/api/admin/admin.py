@@ -9,6 +9,7 @@ from app.models.api_key import APIKey
 from app.services import user_service
 import secrets
 from app.services.user_service import send_password_reset_email
+from datetime import datetime, timedelta
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -153,7 +154,8 @@ async def forgot_password_form(request: Request):
     return templates.TemplateResponse("forgot_password.html", {"request": request})
 
 @router.post("/forgot-password")
-async def forgot_password(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+async def forgot_password(request: Request, email: str = Form(...)):
+    db = next(get_db())
     user = db.query(User).filter(User.email == email).first()
     if user:
         reset_token = secrets.token_urlsafe(32)
