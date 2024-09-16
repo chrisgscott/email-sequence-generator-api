@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.db.database import engine, Base, SessionLocal
+from app.db.database import engine, Base, SessionLocal, get_db
 from app.api.api_v1.api import router as api_router
 from app.services.email_service import check_and_send_scheduled_emails, check_and_schedule_emails
 from app.services import api_key_service
@@ -72,14 +72,6 @@ scheduler.start()
 app.add_event_handler("shutdown", scheduler.shutdown)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/users/token")
-
-@contextmanager
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @app.get("/sentry-debug")
 async def trigger_error():

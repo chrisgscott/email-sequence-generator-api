@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.db.database import get_db, SessionLocal
+from app.db.database import get_db
 from app.core.auth import get_password_hash, verify_password
 from app.models.user import User
 from app.models.api_key import APIKey
