@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from app.db.database import get_db
+from app.db.database import get_db, SessionLocal
 from app.core.auth import get_password_hash
 from app.models.user import User
 from app.models.api_key import APIKey
@@ -155,17 +155,20 @@ async def forgot_password_form(request: Request):
 
 @router.post("/forgot-password")
 async def forgot_password(request: Request, email: str = Form(...)):
-    db = next(get_db())
-    user = db.query(User).filter(User.email == email).first()
-    if user:
-        reset_token = secrets.token_urlsafe(32)
-        user.reset_token = reset_token
-        user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
-        db.commit()
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            reset_token = secrets.token_urlsafe(32)
+            user.reset_token = reset_token
+            user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+            db.commit()
 
-        await send_password_reset_email(db, user.email, reset_token)
+            await send_password_reset_email(db, user.email, reset_token)
 
-    return templates.TemplateResponse("forgot_password_sent.html", {"request": request})
+        return templates.TemplateResponse("forgot_password_sent.html", {"request": request})
+    finally:
+        db.close()
 
 @router.get("/reset-password/{token}", response_class=HTMLResponse)
 async def reset_password_form(request: Request, token: str, db: Session = Depends(get_db)):
