@@ -26,8 +26,8 @@ async def login_page(request: Request):
 async def login(request: Request, username: str = Form(...), password: str = Form(...)):
     if username == "admin" and password == "adminpassword":  # Replace with secure authentication
         request.session["admin_user"] = username
-        return RedirectResponse(url="/admin/users", status_code=302)
-    return RedirectResponse(url="/admin/login", status_code=302)
+        return RedirectResponse(url="/admin/users", status_code=303)
+    return RedirectResponse(url="/admin/login", status_code=303)
 
 @router.get("/logout")
 async def logout(request: Request):
@@ -116,3 +116,7 @@ async def delete_user(request: Request, user_id: int, db: Session = Depends(get_
     db.delete(user)
     db.commit()
     return RedirectResponse(url="/admin/users", status_code=302)
+
+@router.get("/", response_class=HTMLResponse)
+async def admin_index(request: Request, admin_user: str = Depends(get_admin_user)):
+    return RedirectResponse(url="/admin/users", status_code=303)
