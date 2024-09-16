@@ -185,20 +185,22 @@ async def forgot_password(request: Request, email: str = Form(...)):
 
 @router.get("/reset-password/{token}", response_class=HTMLResponse)
 async def reset_password_form(request: Request, token: str, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.reset_token == token, User.reset_token_expiry > datetime.utcnow()).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
-    return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
+    with db as session:
+        user = session.query(User).filter(User.reset_token == token, User.reset_token_expiry > datetime.utcnow()).first()
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
 
 @router.post("/reset-password/{token}")
 async def reset_password(request: Request, token: str, new_password: str = Form(...), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.reset_token == token, User.reset_token_expiry > datetime.utcnow()).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    with db as session:
+        user = session.query(User).filter(User.reset_token == token, User.reset_token_expiry > datetime.utcnow()).first()
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
 
-    user.hashed_password = get_password_hash(new_password)
-    user.reset_token = None
-    user.reset_token_expiry = None
-    db.commit()
+        user.hashed_password = get_password_hash(new_password)
+        user.reset_token = None
+        user.reset_token_expiry = None
+        session.commit()
 
     return RedirectResponse(url="/admin/login", status_code=302)
