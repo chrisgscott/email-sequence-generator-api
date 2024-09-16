@@ -2,7 +2,7 @@ from app.core.config import settings, TIMEZONE
 import sib_api_v3_sdk
 from app.schemas.sequence import EmailContent
 from fastapi import BackgroundTasks
-from app.db.database import SessionLocal
+from app.db.database import SessionLocal, get_db
 from app.models.email import Email
 from datetime import datetime, timedelta, date
 import logging
