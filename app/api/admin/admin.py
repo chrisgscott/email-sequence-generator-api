@@ -84,7 +84,8 @@ async def edit_user_form(request: Request, user_id: int, db: Session = Depends(g
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return templates.TemplateResponse("user_form.html", {"request": request, "user": user})
+    api_key = db.query(APIKey).filter(APIKey.user_id == user_id).first()
+    return templates.TemplateResponse("user_form.html", {"request": request, "user": user, "api_key": api_key})
 
 @router.post("/users/{user_id}/edit")
 async def edit_user(
@@ -92,8 +93,8 @@ async def edit_user(
     user_id: int,
     email: str = Form(...),
     password: str = Form(None),
-    wordpress_url: str = Form(...),
-    wordpress_username: str = Form(...),
+    wordpress_url: str = Form(None),
+    wordpress_username: str = Form(None),
     wordpress_password: str = Form(None),
     db: Session = Depends(get_db),
     admin_user: str = Depends(get_admin_user)
@@ -106,13 +107,15 @@ async def edit_user(
     if password:
         user.hashed_password = get_password_hash(password)
 
-    if not user.api_key:
-        user.api_key = APIKey(key=secrets.token_urlsafe(32), user_id=user.id)
+    api_key = db.query(APIKey).filter(APIKey.user_id == user_id).first()
+    if not api_key:
+        api_key = APIKey(key=secrets.token_urlsafe(32), user_id=user.id)
+        db.add(api_key)
 
-    user.api_key.wordpress_url = wordpress_url
-    user.api_key.wordpress_username = wordpress_username
+    api_key.wordpress_url = wordpress_url
+    api_key.wordpress_username = wordpress_username
     if wordpress_password:
-        user.api_key.wordpress_password = wordpress_password
+        api_key.wordpress_password = wordpress_password
 
     db.commit()
     return RedirectResponse(url="/admin/users", status_code=302)

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>{% if user %}Edit User{% else %}Create User{% endif %}</h2>
+<h1>{% if user %}Edit{% else %}Create{% endif %} User</h1>
 <form method="post">
     <div class="mb-3">
         <label for="email" class="form-label">Email</label>
@@ -13,17 +13,21 @@
         {% if user %}<small class="form-text text-muted">Leave blank to keep current password</small>{% endif %}
     </div>
     <div class="mb-3">
+        <label for="api_key" class="form-label">API Key</label>
+        <input type="text" class="form-control" id="api_key" value="{{ api_key.key if api_key else 'No API key generated' }}" readonly>
+    </div>
+    <div class="mb-3">
         <label for="wordpress_url" class="form-label">WordPress URL</label>
-        <input type="url" class="form-control" id="wordpress_url" name="wordpress_url" value="{{ user.api_key.wordpress_url if user and user.api_key else '' }}" required>
+        <input type="url" class="form-control" id="wordpress_url" name="wordpress_url" value="{{ api_key.wordpress_url if api_key else '' }}">
     </div>
     <div class="mb-3">
         <label for="wordpress_username" class="form-label">WordPress Username</label>
-        <input type="text" class="form-control" id="wordpress_username" name="wordpress_username" value="{{ user.api_key.wordpress_username if user and user.api_key else '' }}" required>
+        <input type="text" class="form-control" id="wordpress_username" name="wordpress_username" value="{{ api_key.wordpress_username if api_key else '' }}">
     </div>
     <div class="mb-3">
         <label for="wordpress_password" class="form-label">WordPress Password</label>
-        <input type="password" class="form-control" id="wordpress_password" name="wordpress_password" {% if not user %}required{% endif %}>
-        {% if user %}<small class="form-text text-muted">Leave blank to keep current password</small>{% endif %}
+        <input type="password" class="form-control" id="wordpress_password" name="wordpress_password">
+        {% if api_key %}<small class="form-text text-muted">Leave blank to keep current password</small>{% endif %}
     </div>
     <button type="submit" class="btn btn-primary">Save</button>
 </form>
