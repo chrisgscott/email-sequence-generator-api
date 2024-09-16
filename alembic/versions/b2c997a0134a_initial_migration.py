@@ -1,8 +1,8 @@
-"""Add WebhookSubmission model
+"""Initial migration
 
-Revision ID: b5efd0b4eea0
-Revises: c141025daceb
-Create Date: 2024-09-16 08:00:00.895185
+Revision ID: b2c997a0134a
+Revises: 
+Create Date: 2024-09-16 13:18:56.119037
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'b5efd0b4eea0'
-down_revision: Union[str, None] = 'c141025daceb'
+revision: str = 'b2c997a0134a'
+down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
