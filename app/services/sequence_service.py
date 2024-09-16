@@ -25,6 +25,7 @@ def create_sequence(db: Session, sequence: SequenceCreate) -> Sequence:
         topic=sequence.topic,
         recipient_email=sequence.recipient_email,
         brevo_list_id=sequence.brevo_list_id,
+        brevo_template_id=sequence.brevo_template_id,  # Add this line
         total_emails=sequence.total_emails,
         days_between_emails=sequence.days_between_emails,
         email_structure=email_structure_json,

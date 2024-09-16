@@ -14,6 +14,7 @@ class Sequence(Base):
     topic = Column(String)
     recipient_email = Column(String)
     brevo_list_id = Column(Integer)
+    brevo_template_id = Column(Integer)  # Added this line
     total_emails = Column(Integer)
     days_between_emails = Column(Integer)
     email_structure = Column(JSONB)

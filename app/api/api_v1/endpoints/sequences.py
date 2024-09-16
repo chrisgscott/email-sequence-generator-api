@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db, SessionLocal
 from app.schemas.sequence import SequenceCreate, SequenceResponse, EmailSection
 from app.services.sequence_generation import generate_and_store_email_sequence
-from app.services import sequence_service, brevo_service, api_key_service
+from app.services import sequence_service, brevo_service, api_key_service, webhook_service
 from app.core.exceptions import AppException
 from app.models.sequence import Sequence
 from loguru import logger
@@ -32,11 +32,20 @@ async def webhook(
             data = await request.json()
             logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
         
+            # Store the webhook submission
+            try:
+                webhook_service.create_webhook_submission(db, data)
+                logger.info("Webhook submission stored successfully")
+            except Exception as e:
+                logger.error(f"Failed to store webhook submission: {str(e)}")
+                # Note that we're not re-raising this exception, allowing the process to continue
+        
             # Extract and validate required fields
             form_id = data.get("form_id")
             topic = data.get("topic")
             recipient_email = data.get("recipient_email")
             brevo_list_id = data.get("brevo_list_id")
+            brevo_template_id = data.get("brevo_template_id")  # Add this line
             sequence_settings = data.get("sequence_settings", {})
             email_structure = data.get("email_structure", [])
             inputs = data.get("inputs", {})
@@ -46,7 +55,7 @@ async def webhook(
             logger.info(f"Parsed JSON data: {data}")
         
             # Validate required fields
-            required_fields = ["form_id", "topic", "recipient_email", "brevo_list_id", "sequence_settings", "email_structure", "inputs"]
+            required_fields = ["form_id", "topic", "recipient_email", "brevo_list_id", "brevo_template_id", "sequence_settings", "email_structure", "inputs"]
             if not all(field in data for field in required_fields):
                 raise AppException("Missing required fields in webhook data", status_code=400)
         
@@ -79,6 +88,7 @@ async def webhook(
                 topic=topic,
                 recipient_email=recipient_email,
                 brevo_list_id=brevo_list_id,
+                brevo_template_id=brevo_template_id,  # Add this line
                 total_emails=sequence_settings['total_emails'],
                 days_between_emails=sequence_settings['days_between_emails'],
                 email_structure=email_structure,

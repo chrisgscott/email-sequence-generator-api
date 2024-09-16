@@ -33,6 +33,7 @@ class SequenceCreate(BaseModel):
     topic: str
     recipient_email: str
     brevo_list_id: int
+    brevo_template_id: int  # Add this line
     total_emails: int
     days_between_emails: int
     email_structure: List[EmailSection]
@@ -47,6 +48,7 @@ class SequenceResponse(BaseModel):
     topic: str
     recipient_email: EmailStr
     brevo_list_id: int
+    brevo_template_id: int  # Add this line
     total_emails: int
     days_between_emails: int
     email_structure: List[EmailSection]

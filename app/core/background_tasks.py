@@ -16,6 +16,7 @@ class SubmissionQueue(BaseModel):
     topic: str
     recipient_email: str
     brevo_list_id: int
+    brevo_template_id: int  # Add this line
     total_emails: int
     days_between_emails: int
     email_structure: List[EmailSection]
@@ -43,6 +44,7 @@ async def process_submission(submission: SubmissionQueue):
             topic=submission.topic,
             recipient_email=submission.recipient_email,
             brevo_list_id=submission.brevo_list_id,
+            brevo_template_id=submission.brevo_template_id,  # Add this line
             total_emails=submission.total_emails,
             days_between_emails=submission.days_between_emails,
             email_structure=submission.email_structure,

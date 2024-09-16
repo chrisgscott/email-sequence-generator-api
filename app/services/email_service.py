@@ -35,6 +35,11 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         
         local_scheduled_time = email.scheduled_for.replace(tzinfo=ZoneInfo('UTC')).astimezone(subscriber_timezone)
         
+        # If the scheduled time is in the past, set it to now + 5 minutes
+        current_time = datetime.now(subscriber_timezone)
+        if local_scheduled_time <= current_time:
+            local_scheduled_time = current_time + timedelta(minutes=5)
+        
         utc_offset = local_scheduled_time.strftime('%z')
         scheduled_at = local_scheduled_time.strftime(f'%Y-%m-%dT%H:%M:%S{utc_offset[:3]}:{utc_offset[3:]}')
 
@@ -43,7 +48,7 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
 
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
-            template_id=settings.BREVO_EMAIL_TEMPLATE_ID,
+            template_id=sequence.brevo_template_id,  # Use the sequence's brevo_template_id
             params={
                 "subject": email_content.get("subject", "No Subject"),
                 **email_content,
@@ -101,6 +106,7 @@ def check_and_send_scheduled_emails():
                             logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
                             continue
                         
+                        logger.info(f"Attempting to send email {email.id} scheduled for {email.scheduled_for}")
                         api_response = send_email(email.sequence.recipient_email, email, email.sequence)
                         
                         email.sent_to_brevo = True
