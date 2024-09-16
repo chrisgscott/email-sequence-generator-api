@@ -22,3 +22,6 @@ def deactivate_api_key(db: Session, key: str) -> bool:
         db.commit()
         return True
     return False
+
+def get_api_key(db: Session, api_key: str) -> APIKey:
+    return db.query(APIKey).filter(APIKey.key == api_key, APIKey.is_active == True).first()

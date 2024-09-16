@@ -95,6 +95,11 @@ Return the result as a JSON array with {batch_size} items.
     # Sentry DSN
     SENTRY_DSN: str = os.getenv("SENTRY_DSN")
 
+    # WordPress Credentials
+    WORDPRESS_URL: str
+    WORDPRESS_USERNAME: str
+    WORDPRESS_PASSWORD: str
+
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
 

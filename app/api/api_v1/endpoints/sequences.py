@@ -14,6 +14,8 @@ from datetime import datetime
 from app.core.auth import get_current_active_user
 from app.schemas.user import User
 from app.core.background_tasks import SubmissionQueue, process_submission
+from app.services import sequence_service, blog_post_service
+from app.schemas.blog_post import BlogPostCreate, BlogPostResponse
 
 router = APIRouter()
 
@@ -105,3 +107,19 @@ async def webhook(
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise AppException("An unexpected error occurred", status_code=500)
+
+@router.post("/create-blog-post", response_model=BlogPostResponse)
+async def create_blog_post(
+    post: BlogPostCreate,
+    api_key: str = Header(..., alias="X-API-Key")
+):
+    try:
+        with get_db() as db:
+            if not api_key_service.validate_api_key(db, api_key):
+                raise HTTPException(status_code=401, detail="Invalid API key")
+            
+            result = blog_post_service.create_blog_post(post.content, post.metadata)
+            return BlogPostResponse(message=result)
+    except Exception as e:
+        logger.error(f"Error creating blog post: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

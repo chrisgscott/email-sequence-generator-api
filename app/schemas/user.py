@@ -3,6 +3,9 @@ from pydantic import BaseModel, EmailStr
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    wordpress_url: str
+    wordpress_username: str
+    wordpress_password: str
 
 class UserInDB(BaseModel):
     id: int
@@ -22,3 +25,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: str | None = None
+
+class UserResponse(BaseModel):
+    email: EmailStr
+    api_key: str

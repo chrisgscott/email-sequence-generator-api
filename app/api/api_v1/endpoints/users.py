@@ -4,9 +4,10 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 from app.core.auth import authenticate_user, create_access_token, get_current_active_user, get_password_hash
 from app.db.database import get_db
-from app.schemas.user import User, UserCreate, Token
+from app.schemas.user import User, UserCreate, Token, UserResponse
 from app.models.user import User as UserModel
 from app.core.config import settings
+from app.services import user_service
 
 router = APIRouter()
 
@@ -40,3 +41,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.get("/me", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
+
+@router.post("/register", response_model=UserResponse)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    db_user, api_key = user_service.create_user_with_api_key(db, user)
+    return UserResponse(email=db_user.email, api_key=api_key)
