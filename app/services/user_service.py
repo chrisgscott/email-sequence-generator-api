@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.user import User, APIKey
+from app.models.user import User
+from app.models.api_key import APIKey
 from app.schemas.user import UserCreate
 from app.core.auth import get_password_hash
 import secrets
