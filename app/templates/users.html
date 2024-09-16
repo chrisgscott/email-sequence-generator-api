@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Users</h2>
+<a href="/admin/users/create" class="btn btn-primary mb-3">Create New User</a>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>API Key</th>
+            <th>WordPress URL</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.email }}</td>
+            <td>{{ user.api_key.key if user.api_key else 'N/A' }}</td>
+            <td>{{ user.api_key.wordpress_url if user.api_key else 'N/A' }}</td>
+            <td>
+                <a href="/admin/users/{{ user.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
+                <form action="/admin/users/{{ user.id }}/delete" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,117 @@
+from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+from app.db.database import get_db
+from app.core.auth import get_password_hash
+from app.models.user import User, APIKey
+from app.services import user_service
+import secrets
+
+router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
+
+def get_admin_user(request: Request):
+    user = request.session.get("admin_user")
+    if not user:
+        raise HTTPException(status_code=302, detail="Not authenticated")
+    return user
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@router.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == "admin" and password == "adminpassword":  # Replace with secure authentication
+        request.session["admin_user"] = username
+        return RedirectResponse(url="/admin/users", status_code=302)
+    return RedirectResponse(url="/admin/login", status_code=302)
+
+@router.get("/logout")
+async def logout(request: Request):
+    request.session.pop("admin_user", None)
+    return RedirectResponse(url="/admin/login", status_code=302)
+
+@router.get("/users", response_class=HTMLResponse)
+async def list_users(request: Request, db: Session = Depends(get_db), admin_user: str = Depends(get_admin_user)):
+    users = db.query(User).all()
+    return templates.TemplateResponse("users.html", {"request": request, "users": users})
+
+@router.get("/users/create", response_class=HTMLResponse)
+async def create_user_form(request: Request, admin_user: str = Depends(get_admin_user)):
+    return templates.TemplateResponse("user_form.html", {"request": request, "user": None})
+
+@router.post("/users/create")
+async def create_user(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    wordpress_url: str = Form(...),
+    wordpress_username: str = Form(...),
+    wordpress_password: str = Form(...),
+    db: Session = Depends(get_db),
+    admin_user: str = Depends(get_admin_user)
+):
+    user = User(email=email, hashed_password=get_password_hash(password))
+    db.add(user)
+    db.flush()
+
+    api_key = APIKey(
+        key=secrets.token_urlsafe(32),
+        user_id=user.id,
+        wordpress_url=wordpress_url,
+        wordpress_username=wordpress_username,
+        wordpress_password=wordpress_password
+    )
+    db.add(api_key)
+    db.commit()
+
+    return RedirectResponse(url="/admin/users", status_code=302)
+
+@router.get("/users/{user_id}/edit", response_class=HTMLResponse)
+async def edit_user_form(request: Request, user_id: int, db: Session = Depends(get_db), admin_user: str = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return templates.TemplateResponse("user_form.html", {"request": request, "user": user})
+
+@router.post("/users/{user_id}/edit")
+async def edit_user(
+    request: Request,
+    user_id: int,
+    email: str = Form(...),
+    password: str = Form(None),
+    wordpress_url: str = Form(...),
+    wordpress_username: str = Form(...),
+    wordpress_password: str = Form(None),
+    db: Session = Depends(get_db),
+    admin_user: str = Depends(get_admin_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.email = email
+    if password:
+        user.hashed_password = get_password_hash(password)
+
+    if not user.api_key:
+        user.api_key = APIKey(key=secrets.token_urlsafe(32), user_id=user.id)
+
+    user.api_key.wordpress_url = wordpress_url
+    user.api_key.wordpress_username = wordpress_username
+    if wordpress_password:
+        user.api_key.wordpress_password = wordpress_password
+
+    db.commit()
+    return RedirectResponse(url="/admin/users", status_code=302)
+
+@router.post("/users/{user_id}/delete")
+async def delete_user(request: Request, user_id: int, db: Session = Depends(get_db), admin_user: str = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user)
+    db.commit()
+    return RedirectResponse(url="/admin/users", status_code=302)

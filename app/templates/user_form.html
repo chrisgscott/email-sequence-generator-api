@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>{% if user %}Edit User{% else %}Create User{% endif %}</h2>
+<form method="post">
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" name="email" value="{{ user.email if user else '' }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" name="password" {% if not user %}required{% endif %}>
+        {% if user %}<small class="form-text text-muted">Leave blank to keep current password</small>{% endif %}
+    </div>
+    <div class="mb-3">
+        <label for="wordpress_url" class="form-label">WordPress URL</label>
+        <input type="url" class="form-control" id="wordpress_url" name="wordpress_url" value="{{ user.api_key.wordpress_url if user and user.api_key else '' }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="wordpress_username" class="form-label">WordPress Username</label>
+        <input type="text" class="form-control" id="wordpress_username" name="wordpress_username" value="{{ user.api_key.wordpress_username if user and user.api_key else '' }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="wordpress_password" class="form-label">WordPress Password</label>
+        <input type="password" class="form-control" id="wordpress_password" name="wordpress_password" {% if not user %}required{% endif %}>
+        {% if user %}<small class="form-text text-muted">Leave blank to keep current password</small>{% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+{% endblock %}

@@ -15,6 +15,10 @@ from app.schemas.user import User
 from contextlib import contextmanager
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from starlette.middleware.sessions import SessionMiddleware
+from app.api.admin import admin
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,17 +39,26 @@ app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dailyjournalprompts.co"],  # Add your frontend domain
+    allow_origins=["https://dailyjournalprompts.co"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
+# Add session middleware
+app.add_middleware(SessionMiddleware, secret_key="your-secret-key")  # Replace with a secure secret key
+
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/admin")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+templates = Jinja2Templates(directory="app/templates")
 
 @app.get("/")
-def read_root(current_user: User = Depends(get_current_active_user)):
-    return {"message": f"Welcome to the Email Sequence Generator API, {current_user.email}"}
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 scheduler = BackgroundScheduler()
 
