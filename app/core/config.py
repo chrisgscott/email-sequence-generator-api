@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-from typing import List, ClassVar
+from typing import List, ClassVar, Optional
 from datetime import timezone
 from app.core.prompts import EMAIL_PROMPT, SECTIONS_PROMPT, SUBJECT_PROMPT
 import os
@@ -96,9 +96,9 @@ Return the result as a JSON array with {batch_size} items.
     SENTRY_DSN: str = os.getenv("SENTRY_DSN")
 
     # WordPress Credentials
-    WORDPRESS_URL: str
-    WORDPRESS_USERNAME: str
-    WORDPRESS_PASSWORD: str
+    WORDPRESS_URL: Optional[str] = None
+    WORDPRESS_USERNAME: Optional[str] = None
+    WORDPRESS_PASSWORD: Optional[str] = None
 
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
