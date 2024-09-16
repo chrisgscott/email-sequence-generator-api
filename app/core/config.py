@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv("DATABASE_URL")  # Connection string for the database
     BREVO_API_KEY: str = os.getenv("BREVO_API_KEY")  # API key for Brevo email service
     BREVO_EMAIL_TEMPLATE_ID: int = 1  # ID of the email template in Brevo
+    BREVO_PASSWORD_RESET_TEMPLATE_ID: int = 4  # Replace with your actual template ID for password reset emails
 
     # OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o-mini"  # The OpenAI model to use for generating email content
@@ -99,6 +100,11 @@ Return the result as a JSON array with {batch_size} items.
     WORDPRESS_URL: Optional[str] = None
     WORDPRESS_USERNAME: Optional[str] = None
     WORDPRESS_PASSWORD: Optional[str] = None
+
+    # Password Reset Configuration
+    BASE_URL: str = "https://plankton-app-qivtq.ondigitalocean.app/"  # Replace with your actual base URL
+    BREVO_PASSWORD_RESET_TEMPLATE_ID: int = 2  # Replace with your actual template ID for password reset emails
+    PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
 
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from

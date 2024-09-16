@@ -4,6 +4,11 @@ from app.models.api_key import APIKey
 from app.schemas.user import UserCreate
 from app.core.auth import get_password_hash
 import secrets
+from app.services.email_service import send_email_to_brevo
+from app.schemas.sequence import EmailContent
+from datetime import datetime, timedelta
+import pytz
+from app.core.config import settings
 
 def create_user_with_api_key(db: Session, user: UserCreate):
     hashed_password = get_password_hash(user.password)
@@ -24,3 +29,23 @@ def create_user_with_api_key(db: Session, user: UserCreate):
     db.refresh(db_user)
 
     return db_user, api_key
+
+async def send_password_reset_email(db: Session, email: str, reset_token: str):
+    reset_link = f"{settings.BASE_URL}/admin/reset-password/{reset_token}"
+    
+    email_content = EmailContent(
+        subject="Password Reset Request",
+        content={
+            "body": f"Click the following link to reset your password: {reset_link}",
+            "reset_link": reset_link
+        },
+        scheduled_for=datetime.now(pytz.UTC) + timedelta(minutes=1)
+    )
+    
+    inputs = {}  # Add any additional inputs if needed
+    
+    try:
+        await send_email_to_brevo(db, email, email_content, inputs, settings.BREVO_PASSWORD_RESET_TEMPLATE_ID)
+    except Exception as e:
+        logger.error(f"Failed to send password reset email to {email}: {str(e)}")
+        raise

@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.api_key import APIKey
 from app.services import user_service
 import secrets
+from app.services.user_service import send_password_reset_email
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -120,3 +121,66 @@ async def delete_user(request: Request, user_id: int, db: Session = Depends(get_
 @router.get("/", response_class=HTMLResponse)
 async def admin_index(request: Request, admin_user: str = Depends(get_admin_user)):
     return RedirectResponse(url="/admin/users", status_code=303)
+
+@router.get("/users/{user_id}/reset-password", response_class=HTMLResponse)
+async def reset_password_form(request: Request, user_id: int, db: Session = Depends(get_db), admin_user: str = Depends(get_admin_user)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return templates.TemplateResponse("reset_password.html", {"request": request, "user": user})
+
+@router.post("/users/{user_id}/reset-password")
+async def reset_password(
+    request: Request,
+    user_id: int,
+    new_password: str = Form(...),
+    db: Session = Depends(get_db),
+    admin_user: str = Depends(get_admin_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.hashed_password = get_password_hash(new_password)
+    user.reset_token = None
+    user.reset_token_expiry = None
+    db.commit()
+
+    return RedirectResponse(url="/admin/users", status_code=302)
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_form(request: Request):
+    return templates.TemplateResponse("forgot_password.html", {"request": request})
+
+@router.post("/forgot-password")
+async def forgot_password(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        reset_token = secrets.token_urlsafe(32)
+        user.reset_token = reset_token
+        user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
+        db.commit()
+
+        await send_password_reset_email(db, user.email, reset_token)
+
+    return templates.TemplateResponse("forgot_password_sent.html", {"request": request})
+
+@router.get("/reset-password/{token}", response_class=HTMLResponse)
+async def reset_password_form(request: Request, token: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.reset_token == token, User.reset_token_expiry > datetime.utcnow()).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    return templates.TemplateResponse("reset_password.html", {"request": request, "token": token})
+
+@router.post("/reset-password/{token}")
+async def reset_password(request: Request, token: str, new_password: str = Form(...), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.reset_token == token, User.reset_token_expiry > datetime.utcnow()).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user.hashed_password = get_password_hash(new_password)
+    user.reset_token = None
+    user.reset_token_expiry = None
+    db.commit()
+
+    return RedirectResponse(url="/admin/login", status_code=302)

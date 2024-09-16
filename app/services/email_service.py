@@ -148,7 +148,7 @@ def send_email_background(db: Session, recipient_email: str, email: EmailContent
         logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
         # Here you might want to handle the error, maybe retry later or mark as failed in the database
 
-def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent, inputs: dict):
+def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent, inputs: dict, template_id: int):
     configuration = sib_api_v3_sdk.Configuration()
     configuration.api_key['api-key'] = settings.BREVO_API_KEY
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
@@ -169,10 +169,11 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     logger.info(f"To: {to}")
     logger.info(f"Params: {params}")
     logger.info(f"Scheduled At: {scheduled_at}")
+    logger.info(f"Template ID: {template_id}")
 
     try:
         api_response = api_instance.send_transac_email({
-            "templateId": settings.BREVO_EMAIL_TEMPLATE_ID,
+            "templateId": template_id,
             "to": to,
             "params": params,
             "scheduledAt": scheduled_at
