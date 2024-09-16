@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.api_key import APIKey

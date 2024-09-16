@@ -10,6 +10,9 @@ from app.services import user_service
 import secrets
 from app.services.user_service import send_password_reset_email
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -164,9 +167,19 @@ async def forgot_password(request: Request, email: str = Form(...)):
             user.reset_token_expiry = datetime.utcnow() + timedelta(hours=1)
             db.commit()
 
-            await send_password_reset_email(db, user.email, reset_token)
+            try:
+                await send_password_reset_email(db, user.email, reset_token)
+            except Exception as e:
+                logger.error(f"Failed to send password reset email to {email}: {str(e)}")
+                # Optionally, you can roll back the database changes if the email fails to send
+                # db.rollback()
+                return templates.TemplateResponse("forgot_password_error.html", {"request": request, "error": "Failed to send reset email. Please try again later."})
 
+        # Always return a success message, even if the email doesn't exist (for security reasons)
         return templates.TemplateResponse("forgot_password_sent.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Error in forgot_password: {str(e)}")
+        return templates.TemplateResponse("forgot_password_error.html", {"request": request, "error": "An unexpected error occurred. Please try again later."})
     finally:
         db.close()
 
