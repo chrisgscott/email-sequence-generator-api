@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.api_key import APIKey
 from datetime import datetime
 from typing import List
+import logging
 
 def generate_api_key(db: Session, user_id: int) -> str:
     key = secrets.token_urlsafe(32)
@@ -29,9 +30,13 @@ def get_api_key(db: Session, api_key: str) -> APIKey:
 
 def get_all_active_domains(db: Session) -> List[str]:
     active_api_keys = db.query(APIKey).filter(APIKey.is_active == True, APIKey.wordpress_url.isnot(None)).all()
-    return list(set(extract_domain(api_key.wordpress_url) for api_key in active_api_keys))
+    domains = list(set(extract_domain(api_key.wordpress_url) for api_key in active_api_keys))
+    logger.info(f"Active domains: {domains}")
+    return domains
 
 def extract_domain(url: str) -> str:
     from urllib.parse import urlparse
     parsed_url = urlparse(url)
-    return parsed_url.netloc
+    domain = parsed_url.netloc
+    logger.info(f"Extracted domain '{domain}' from URL '{url}'")
+    return domain
