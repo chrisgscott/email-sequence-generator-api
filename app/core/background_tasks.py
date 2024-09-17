@@ -4,7 +4,7 @@ from app.db.database import SessionLocal
 from app.models.sequence import Sequence
 from app.schemas.sequence import SequenceCreate, EmailSection
 from app.services import sequence_service
-from app.services.sequence_generation import generate_and_store_email_sequence
+from app.services.sequence_generation import generate_and_store_email_sequence, format_email_for_blog_post
 from app.services.brevo_service import subscribe_to_brevo_list
 from loguru import logger
 from typing import List
@@ -76,7 +76,7 @@ async def process_submission(submission: SubmissionQueue):
         # Generate and post blog posts for each email
         api_key_obj = api_key_service.get_api_key(db, submission.api_key)
         for email in db_sequence.emails:
-            blog_post_content = sequence_generation.format_email_for_blog_post(email)
+            blog_post_content = format_email_for_blog_post(email)
             blog_post_metadata = {
                 "title": f"Email Sequence: {email.subject}",
                 "category": "Email Sequences",

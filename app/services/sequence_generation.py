@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+from app.models.email import EmailBase
 from zoneinfo import ZoneInfo
 from loguru import logger
 from app.core.config import settings
