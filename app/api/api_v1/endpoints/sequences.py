@@ -106,10 +106,10 @@ async def webhook(
 async def create_blog_post(
     post: BlogPostCreate,
     db: Session = Depends(get_db),
-    api_key: str = Depends(get_api_key)
+    api_key: APIKey = Depends(get_api_key)
 ):
     try:
-        result = blog_post_service.create_blog_post(post.content, post.metadata)
+        result = blog_post_service.create_blog_post(post.content, post.metadata, api_key)
         return BlogPostResponse(message=result)
     except Exception as e:
         logger.error(f"Error creating blog post: {str(e)}")
