@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI, Request, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.database import engine, Base, SessionLocal, get_db
@@ -33,13 +33,6 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
     profiles_sample_rate=1.0,
 )
-
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-def get_api_key(api_key: str = Security(api_key_header), db: Session = Depends(get_db)):
-    if api_key_service.validate_api_key(db, api_key):
-        return api_key
-    raise HTTPException(status_code=403, detail="Could not validate API Key")
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 

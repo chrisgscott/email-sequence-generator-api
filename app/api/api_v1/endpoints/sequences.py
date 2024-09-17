@@ -16,7 +16,7 @@ from app.schemas.user import User
 from app.core.background_tasks import SubmissionQueue, process_submission
 from app.services import sequence_service, blog_post_service
 from app.schemas.blog_post import BlogPostCreate, BlogPostResponse
-from app.main import get_api_key
+from app.core.api_key import get_api_key
 
 router = APIRouter()
 
