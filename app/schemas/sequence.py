@@ -43,6 +43,7 @@ class SequenceCreate(BaseModel):
     topic_depth: int = Field(default=5)
     preferred_time: time
     timezone: str
+    custom_post_type: str  # Add this line
 
 class SequenceResponse(BaseModel):
     id: int

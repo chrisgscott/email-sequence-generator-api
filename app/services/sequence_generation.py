@@ -10,6 +10,7 @@ from app.schemas.sequence import SequenceCreate
 from app.services import sequence_service, openai_service
 import re
 import sentry_sdk
+from typing import Dict
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
@@ -140,14 +141,13 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         logger.info(f"Closing database connection for sequence_id: {sequence_id}")
         db.close()
 
-def format_email_for_blog_post(email: EmailBase) -> str:
-    blog_post_content = ""
+def format_email_for_blog_post(email: EmailBase) -> Dict[str, str]:
+    blog_post_content = {}
     
-    for section_content in email.content.values():
-        blog_post_content += f"{section_content}\n\n"
+    for section_name, section_content in email.content.items():
+        # Remove any personal information or placeholders
+        content = re.sub(r'\[NAME\]', 'Reader', section_content)
+        content = re.sub(r'\[EMAIL\]', 'your email', content)
+        blog_post_content[section_name] = content.strip()
     
-    # Remove any personal information or placeholders
-    blog_post_content = re.sub(r'\[NAME\]', 'Reader', blog_post_content)
-    blog_post_content = re.sub(r'\[EMAIL\]', 'your email', blog_post_content)
-    
-    return blog_post_content.strip()
+    return blog_post_content

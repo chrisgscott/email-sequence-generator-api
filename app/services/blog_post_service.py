@@ -4,24 +4,24 @@ import re
 from app.models.api_key import APIKey
 from loguru import logger
 
-def create_blog_post(content: str, metadata: dict, api_key: APIKey) -> str:
-    # Anonymize content (already done in format_email_for_blog_post)
-    
+def create_blog_post(content: Dict[str, str], metadata: dict, api_key: APIKey) -> str:
     # Filter content
-    if filter_content(content):
-        return "Content flagged as potentially inappropriate"
+    for section_content in content.values():
+        if filter_content(section_content):
+            return "Content flagged as potentially inappropriate"
     
     # Create WordPress post
     post_data = {
         'title': metadata['title'],
-        'content': content,
         'status': 'draft',
         'categories': [get_category_id(api_key, metadata['category'])],
-        'tags': get_tag_ids(api_key, metadata['tags'])
+        'tags': get_tag_ids(api_key, metadata['tags']),
+        'type': metadata['custom_post_type'],
+        'meta': content  # Add content as custom fields
     }
     
     # Post to WordPress
-    url = f"{api_key.wordpress_url}/wp-json/wp/v2/posts"
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/{metadata['custom_post_type']}"
     auth = (api_key.wordpress_username, api_key.wordpress_app_password)
     
     try:
@@ -104,3 +104,46 @@ def filter_content(content: str) -> bool:
             return True
     
     return False
+
+def create_custom_post_type(api_key: APIKey, custom_post_type: str) -> None:
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/types"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
+
+    post_type_data = {
+        'name': custom_post_type.replace('_', ' ').title(),
+        'slug': custom_post_type,
+        'supports': ['title', 'editor', 'author', 'thumbnail', 'excerpt', 'custom-fields'],
+        'show_in_rest': True,
+        'public': True,
+        'has_archive': True,
+    }
+
+    try:
+        response = requests.post(url, json=post_type_data, auth=auth)
+        response.raise_for_status()
+        logger.info(f"Custom post type '{custom_post_type}' created successfully")
+    except requests.RequestException as e:
+        logger.error(f"Failed to create custom post type '{custom_post_type}': {str(e)}")
+        raise AppException(f"Failed to create custom post type: {str(e)}", status_code=500)
+
+def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
+    create_custom_post_type(api_key, custom_post_type)
+    
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/types/{custom_post_type}"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
+
+    for section in email_structure:
+        field_data = {
+            'name': section.name,
+            'type': 'string',
+            'description': section.description,
+            'show_in_rest': True,
+        }
+        
+        try:
+            response = requests.post(f"{url}/fields", json=field_data, auth=auth)
+            response.raise_for_status()
+            logger.info(f"Custom field '{section.name}' created for post type '{custom_post_type}'")
+        except requests.RequestException as e:
+            logger.error(f"Failed to create custom field '{section.name}': {str(e)}")
+            raise AppException(f"Failed to create custom field: {str(e)}", status_code=500)
