@@ -5,7 +5,7 @@ class UserCreate(BaseModel):
     password: str
     wordpress_url: str
     wordpress_username: str
-    wordpress_password: str
+    wordpress_app_password: str
 
 class UserInDB(BaseModel):
     id: int

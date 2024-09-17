@@ -59,7 +59,7 @@ async def create_user(
     password: str = Form(...),
     wordpress_url: str = Form(...),
     wordpress_username: str = Form(...),
-    wordpress_password: str = Form(...),
+    wordpress_app_password: str = Form(...),
     db: Session = Depends(get_db),
     admin_user: str = Depends(get_admin_user)
 ):
@@ -72,7 +72,7 @@ async def create_user(
         user_id=user.id,
         wordpress_url=wordpress_url,
         wordpress_username=wordpress_username,
-        wordpress_password=wordpress_password
+        wordpress_app_password=wordpress_app_password
     )
     db.add(api_key)
     db.commit()
@@ -95,7 +95,7 @@ async def edit_user(
     password: str = Form(None),
     wordpress_url: str = Form(None),
     wordpress_username: str = Form(None),
-    wordpress_password: str = Form(None),
+    wordpress_app_password: str = Form(None),
     db: Session = Depends(get_db),
     admin_user: str = Depends(get_admin_user)
 ):
@@ -114,8 +114,8 @@ async def edit_user(
 
     api_key.wordpress_url = wordpress_url
     api_key.wordpress_username = wordpress_username
-    if wordpress_password:
-        api_key.wordpress_password = wordpress_password
+    if wordpress_app_password:
+        api_key.wordpress_app_password = wordpress_app_password
 
     db.commit()
     return RedirectResponse(url="/admin/users", status_code=302)

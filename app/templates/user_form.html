@@ -25,9 +25,9 @@
         <input type="text" class="form-control" id="wordpress_username" name="wordpress_username" value="{{ api_key.wordpress_username if api_key else '' }}">
     </div>
     <div class="mb-3">
-        <label for="wordpress_password" class="form-label">WordPress Password</label>
-        <input type="password" class="form-control" id="wordpress_password" name="wordpress_password">
-        {% if api_key %}<small class="form-text text-muted">Leave blank to keep current password</small>{% endif %}
+        <label for="wordpress_app_password" class="form-label">WordPress Application Password</label>
+        <input type="password" class="form-control" id="wordpress_app_password" name="wordpress_app_password">
+        {% if api_key %}<small class="form-text text-muted">Leave blank to keep current application password</small>{% endif %}
     </div>
     <button type="submit" class="btn btn-primary">Save</button>
 </form>
