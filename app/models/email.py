@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db.database import Base
 from pydantic import BaseModel
-from typing import Dict
+from typing import Dict, Optional, List
 
 class EmailBase(BaseModel):
     subject: str
