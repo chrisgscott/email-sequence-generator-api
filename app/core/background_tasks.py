@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from app.db.database import SessionLocal
 from app.models.sequence import Sequence
 from app.schemas.sequence import SequenceCreate, EmailSection
-from app.services import sequence_service
+from app.services import sequence_service, api_key_service, blog_post_service
 from app.services.sequence_generation import generate_and_store_email_sequence, format_email_for_blog_post
 from app.services.brevo_service import subscribe_to_brevo_list
 from loguru import logger
@@ -24,6 +24,7 @@ class SubmissionQueue(BaseModel):
     topic_depth: int
     preferred_time: time
     timezone: str
+    api_key: str  # Add this line
 
 async def process_submission_queue(queue: Queue):
     while True:
@@ -73,8 +74,12 @@ async def process_submission(submission: SubmissionQueue):
         await generate_and_store_email_sequence(sequence_id, sequence_create)
         logger.info(f"Completed email generation for sequence ID: {sequence_id}")
 
-        # Generate and post blog posts for each email
+        # Get the API key object once
         api_key_obj = api_key_service.get_api_key(db, submission.api_key)
+        if not api_key_obj:
+            raise ValueError(f"Invalid API key: {submission.api_key}")
+
+        # Generate and post blog posts for each email
         for email in db_sequence.emails:
             blog_post_content = format_email_for_blog_post(email)
             blog_post_metadata = {
@@ -88,16 +93,17 @@ async def process_submission(submission: SubmissionQueue):
             except Exception as e:
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
 
-        # Generate and post blog post
+        # Generate and post blog post for the entire sequence
         blog_post_content = await sequence_generation.generate_blog_post(sequence_create)
         blog_post_metadata = {
             "title": f"Email Sequence: {sequence_create.topic}",
             "category": "Email Sequences",
             "tags": [sequence_create.topic, "email marketing"]
         }
-        api_key_obj = api_key_service.get_api_key(db, submission.api_key)
         blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
         logger.info(f"Blog post created: {blog_post_result}")
+
+        # ... rest of the existing code ...
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Error processing submission for email {submission.recipient_email}: {str(e)}")

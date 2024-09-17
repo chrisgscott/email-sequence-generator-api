@@ -87,7 +87,8 @@ async def webhook(
             inputs=data["inputs"],
             topic_depth=data.get("topic_depth", 5),
             preferred_time=preferred_time_obj,
-            timezone=data["timezone"]
+            timezone=data["timezone"],
+            api_key=api_key
         )
 
         background_tasks.add_task(process_submission, submission)
