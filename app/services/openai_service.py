@@ -180,7 +180,9 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             processed_emails.append(EmailBase(
                 subject=email['subject'],
                 content=email['content'],
-                scheduled_for=scheduled_for
+                scheduled_for=scheduled_for,
+                category=email.get('category'),
+                tags=email.get('tags', [])
             ))
 
         logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)}")

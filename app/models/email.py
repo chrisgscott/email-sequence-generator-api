@@ -9,6 +9,8 @@ from typing import Dict
 class EmailBase(BaseModel):
     subject: str
     content: Dict[str, str]
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 class Email(Base):
     __tablename__ = "emails"
