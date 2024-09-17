@@ -29,78 +29,73 @@ async def webhook(
 ):
     try:
         data = await request.json()
-        logger.info(f"Received webhook data: {json.dumps(data, indent=2)}")
-        
-        # Store the webhook submission
-        try:
-            webhook_service.create_webhook_submission(db, data)
-            logger.info("Webhook submission stored successfully")
-        except Exception as e:
-            logger.error(f"Failed to store webhook submission: {str(e)}")
-            # Note that we're not re-raising this exception, allowing the process to continue
-        
-        # Extract and validate required fields
-        form_id = data.get("form_id")
-        topic = data.get("topic")
-        recipient_email = data.get("recipient_email")
-        brevo_list_id = data.get("brevo_list_id")
-        brevo_template_id = data.get("brevo_template_id")
-        sequence_settings = data.get("sequence_settings", {})
-        email_structure = data.get("email_structure", [])
-        inputs = data.get("inputs", {})
-        preferred_time = data.get("preferred_time", "07:30:00")
-        timezone = data.get("timezone", "UTC")
+        logger.info(f"Received webhook data: {data}")
 
-        logger.info(f"Parsed JSON data: {data}")
-        
-        # Validate required fields
-        required_fields = ["form_id", "topic", "recipient_email", "brevo_list_id", "brevo_template_id", "sequence_settings", "email_structure", "inputs"]
-        if not all(field in data for field in required_fields):
-            raise AppException("Missing required fields in webhook data", status_code=400)
-        
+        # Store the raw submission
+        submission_service.store_submission(db, data)
+        logger.info("Webhook submission stored successfully")
+
+        # Define required fields
+        required_fields = [
+            "form_id", "topic", "recipient_email", "brevo_list_id",
+            "sequence_settings", "email_structure", "inputs",
+            "preferred_time", "timezone"
+        ]
+
+        # Check for required fields
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            raise AppException(f"Missing required fields: {', '.join(missing_fields)}", status_code=400)
+
+        # Extract and validate sequence settings
+        sequence_settings = data["sequence_settings"]
         if "total_emails" not in sequence_settings or "days_between_emails" not in sequence_settings:
             raise AppException("Missing required fields in sequence_settings", status_code=400)
-        
+
         # Validate email_structure
+        email_structure = data["email_structure"]
         if not isinstance(email_structure, list) or not all(isinstance(section, dict) and "name" in section and "word_count" in section for section in email_structure):
             raise AppException("Invalid email_structure format", status_code=400)
-        
+
         # Create EmailSection objects
-        email_structure = [
+        email_sections = [
             EmailSection(
                 name=section['name'],
-                word_count=str(section['word_count']),  # Make sure word_count is a string
+                word_count=str(section['word_count']),
                 description=section.get('description', f"Content for {section['name']}")
             )
-            for section in data['email_structure']
+            for section in email_structure
         ]
-        
-        topic_depth = data.get("topic_depth", 5)
-        
-        try:
-            preferred_time_obj = datetime.strptime(preferred_time, "%H:%M:%S").time()
-        except ValueError:
-            preferred_time_obj = datetime.strptime(preferred_time, "%H:%M").time()
 
+        # Parse preferred time
+        try:
+            preferred_time_obj = datetime.strptime(data["preferred_time"], "%H:%M").time()
+        except ValueError:
+            raise AppException("Invalid preferred_time format. Use HH:MM", status_code=400)
+
+        # Create SubmissionQueue object
         submission = SubmissionQueue(
-            form_id=form_id,
-            topic=topic,
-            recipient_email=recipient_email,
-            brevo_list_id=brevo_list_id,
-            brevo_template_id=brevo_template_id,
-            total_emails=sequence_settings['total_emails'],
-            days_between_emails=sequence_settings['days_between_emails'],
-            email_structure=email_structure,
-            inputs=inputs,
-            topic_depth=topic_depth,
+            form_id=data["form_id"],
+            topic=data["topic"],
+            recipient_email=data["recipient_email"],
+            brevo_list_id=data["brevo_list_id"],
+            brevo_template_id=data.get("brevo_template_id"),
+            total_emails=sequence_settings["total_emails"],
+            days_between_emails=sequence_settings["days_between_emails"],
+            email_structure=email_sections,
+            inputs=data["inputs"],
+            topic_depth=data.get("topic_depth", 5),
             preferred_time=preferred_time_obj,
-            timezone=timezone
+            timezone=data["timezone"]
         )
 
         background_tasks.add_task(process_submission, submission)
 
         return {"message": "Sequence creation and email generation started"}
-    
+
+    except AppException as e:
+        logger.error(f"AppException in webhook: {str(e)}")
+        raise
     except Exception as e:
         logger.error(f"Unexpected error in webhook: {str(e)}")
         raise AppException("An unexpected error occurred", status_code=500)
