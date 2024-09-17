@@ -19,10 +19,15 @@ def create_blog_post(content: Dict[str, str], metadata: dict, api_key: APIKey) -
         'status': 'draft',
         'categories': [get_category_id(api_key, metadata['category'])],
         'tags': get_tag_ids(api_key, metadata['tags']),
-        'type': metadata['custom_post_type'],
-        'meta': content  # Add content as custom fields
+        'content': '',  # We'll update this with the combined content
     }
     
+    # Combine content into the post content
+    combined_content = ""
+    for field_name, field_content in content.items():
+        combined_content += f"<h2>{field_name.capitalize()}</h2>\n{field_content}\n\n"
+    post_data['content'] = combined_content
+
     # Post to WordPress
     url = f"{api_key.wordpress_url}/wp-json/wp/v2/{metadata['custom_post_type']}"
     auth = (api_key.wordpress_username, api_key.wordpress_app_password)
@@ -108,6 +113,20 @@ def filter_content(content: str) -> bool:
     
     return False
 
+def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
+    # Check if the custom post type exists
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/types/{custom_post_type}"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
+
+    try:
+        response = requests.get(url, auth=auth)
+        response.raise_for_status()
+        logger.info(f"Custom post type '{custom_post_type}' exists")
+    except requests.RequestException as e:
+        logger.error(f"Custom post type '{custom_post_type}' does not exist: {str(e)}")
+        logger.info(f"Attempting to create custom post type '{custom_post_type}'")
+        create_custom_post_type(api_key, custom_post_type)
+
 def create_custom_post_type(api_key: APIKey, custom_post_type: str) -> None:
     url = f"{api_key.wordpress_url}/wp-json/wp/v2/types"
     auth = (api_key.wordpress_username, api_key.wordpress_app_password)
@@ -128,25 +147,3 @@ def create_custom_post_type(api_key: APIKey, custom_post_type: str) -> None:
     except requests.RequestException as e:
         logger.error(f"Failed to create custom post type '{custom_post_type}': {str(e)}")
         raise AppException(f"Failed to create custom post type: {str(e)}", status_code=500)
-
-def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
-    create_custom_post_type(api_key, custom_post_type)
-    
-    url = f"{api_key.wordpress_url}/wp-json/wp/v2/types/{custom_post_type}"
-    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
-
-    for section in email_structure:
-        field_data = {
-            'name': section.name,
-            'type': 'string',
-            'description': section.description,
-            'show_in_rest': True,
-        }
-        
-        try:
-            response = requests.post(f"{url}/fields", json=field_data, auth=auth)
-            response.raise_for_status()
-            logger.info(f"Custom field '{section.name}' created for post type '{custom_post_type}'")
-        except requests.RequestException as e:
-            logger.error(f"Failed to create custom field '{section.name}': {str(e)}")
-            raise AppException(f"Failed to create custom field: {str(e)}", status_code=500)

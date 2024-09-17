@@ -101,13 +101,13 @@ async def process_submission(submission: SubmissionQueue):
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
                 # Consider adding a retry mechanism or alternative action here
 
-        # Set up custom post type and fields
+                # Set up custom post type and fields
         try:
             blog_post_service.setup_custom_post_type_and_fields(api_key_obj, submission.custom_post_type, submission.email_structure)
             logger.info(f"Custom post type and fields set up for '{submission.custom_post_type}'")
         except Exception as e:
             logger.error(f"Failed to set up custom post type and fields: {str(e)}")
-            # Consider whether to continue or raise an exception here
+            # Log the error but continue processing
 
     except Exception as e:
         sentry_sdk.capture_exception(e)
