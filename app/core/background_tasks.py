@@ -27,6 +27,7 @@ class SubmissionQueue(BaseModel):
     preferred_time: time
     timezone: str
     api_key: str  # Add this line
+    custom_post_type: str
 
 async def process_submission_queue(queue: Queue):
     while True:
@@ -47,14 +48,16 @@ async def process_submission(submission: SubmissionQueue):
             topic=submission.topic,
             recipient_email=submission.recipient_email,
             brevo_list_id=submission.brevo_list_id,
-            brevo_template_id=submission.brevo_template_id,  # Add this line
+            brevo_template_id=submission.brevo_template_id,
             total_emails=submission.total_emails,
             days_between_emails=submission.days_between_emails,
             email_structure=submission.email_structure,
             inputs=submission.inputs,
             topic_depth=submission.topic_depth,
             preferred_time=submission.preferred_time,
-            timezone=submission.timezone
+            timezone=submission.timezone,
+            custom_post_type=submission.custom_post_type
+
         )
         logger.info(f"Creating sequence for email: {submission.recipient_email}")
         db_sequence = sequence_service.create_sequence(db, sequence_create)
