@@ -28,4 +28,10 @@ def get_api_key(db: Session, api_key: str) -> APIKey:
     return db.query(APIKey).filter(APIKey.key == api_key, APIKey.is_active == True).first()
 
 def get_all_active_domains(db: Session) -> List[str]:
-    return [api_key.domain for api_key in db.query(APIKey).filter(APIKey.is_active == True).all() if api_key.domain]
+    active_api_keys = db.query(APIKey).filter(APIKey.is_active == True, APIKey.wordpress_url.isnot(None)).all()
+    return list(set(extract_domain(api_key.wordpress_url) for api_key in active_api_keys))
+
+def extract_domain(url: str) -> str:
+    from urllib.parse import urlparse
+    parsed_url = urlparse(url)
+    return parsed_url.netloc
