@@ -73,6 +73,19 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                                         "description": f"Content for the '{section.name}' section"
                                     } for section in email_structure
                                 }
+                            },
+                            "category": {
+                                "type": "string",
+                                "description": "A single category related to this email to be used in a blog post"
+                            },
+                            "tags": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "minItems": 3,
+                                "maxItems": 5,
+                                "description": "3-5 tags related to this email to be used in a blog post"
                             }
                         },
                         "required": ["subject", "content"]

@@ -24,6 +24,8 @@ class EmailBase(BaseModel):
     subject: str
     content: Dict[str, str]
     scheduled_for: datetime
+    category: str
+    tags: List[str]
 
 class EmailContent(EmailBase):
     pass

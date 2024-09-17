@@ -139,26 +139,10 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         logger.info(f"Closing database connection for sequence_id: {sequence_id}")
         db.close()
 
-async def generate_blog_post(sequence: SequenceCreate):
-    prompt = f"""Create a blog post summarizing an email sequence about {sequence.topic}. 
-    The sequence consists of {sequence.total_emails} emails sent over {sequence.total_emails * sequence.days_between_emails} days. 
-    Include the following sections:
-    1. Introduction to the email sequence topic
-    2. Brief overview of what subscribers can expect
-    3. Key takeaways or benefits from the sequence
-    4. Call-to-action for readers to subscribe to the email list
-    
-    Keep the content general and avoid using specific names or personal information."""
-    
-    response = await openai_service.generate_content(prompt, max_tokens=1000)
-    
-    return response.choices[0].text.strip()
-
 def format_email_for_blog_post(email: EmailBase) -> str:
     blog_post_content = f"<h1>{email.subject}</h1>\n\n"
     
-    for section_name, section_content in email.content.items():
-        blog_post_content += f"<h2>{section_name}</h2>\n"
+    for section_content in email.content.values():
         blog_post_content += f"<p>{section_content}</p>\n\n"
     
     # Remove any personal information or placeholders

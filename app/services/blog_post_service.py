@@ -75,6 +75,16 @@ def get_tag_ids(api_key: APIKey, tag_names: list) -> list:
     return tag_ids
 
 def filter_content(content: str) -> bool:
-    # Implement content filtering logic here
-    # Return True if content is inappropriate, False otherwise
+    inappropriate_words = [
+        "inappropriate_word1",
+        "inappropriate_word2",
+        "inappropriate_phrase1",
+        # Add more words and phrases here
+    ]
+    
+    content_lower = content.lower()
+    for word in inappropriate_words:
+        if word.lower() in content_lower:
+            return True
+    
     return False

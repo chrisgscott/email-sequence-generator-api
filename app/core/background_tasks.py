@@ -81,13 +81,14 @@ async def process_submission(submission: SubmissionQueue):
         if not api_key_obj:
             raise ValueError(f"Invalid API key: {submission.api_key}")
 
-        # Generate and post blog posts for each email
-        for email in db_sequence.emails:
-            blog_post_content = format_email_for_blog_post(email)
+        # Generate and post blog posts for each email in the sequence
+        emails = sequence_service.get_emails_for_sequence(db, sequence_create.id)
+        for email in emails:
+            blog_post_content = sequence_generation.format_email_for_blog_post(email)
             blog_post_metadata = {
-                "title": f"Email Sequence: {email.subject}",
-                "category": "Email Sequences",
-                "tags": [sequence_create.topic, "email marketing"]
+                "title": f"{email.subject}",
+                "category": email.category,
+                "tags": email.tags
             }
             try:
                 blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
@@ -95,16 +96,6 @@ async def process_submission(submission: SubmissionQueue):
             except Exception as e:
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
                 # Consider adding a retry mechanism or alternative action here
-
-        # Generate and post blog post for the entire sequence
-        blog_post_content = await sequence_generation.generate_blog_post(sequence_create)
-        blog_post_metadata = {
-            "title": f"Email Sequence: {sequence_create.topic}",
-            "category": "Email Sequences",
-            "tags": [sequence_create.topic, "email marketing"]
-        }
-        blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
-        logger.info(f"Blog post created: {blog_post_result}")
 
         # ... rest of the existing code ...
     except Exception as e:
