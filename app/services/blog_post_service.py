@@ -76,10 +76,26 @@ def get_tag_ids(api_key: APIKey, tag_names: list) -> list:
 
 def filter_content(content: str) -> bool:
     inappropriate_words = [
-        "inappropriate_word1",
-        "inappropriate_word2",
-        "inappropriate_phrase1",
-        # Add more words and phrases here
+        # Profanity and explicit language
+        "fuck", "shit", "ass", "damn",
+        # Hate speech or discriminatory terms
+        "racist", "sexist", "homophobic",
+        # Violence-related words
+        "kill", "murder", "attack",
+        # Illegal activities
+        "drugs", "theft", "fraud",
+        # Controversial political terms
+        "conspiracy", "extremist",
+        # Sensitive health-related terms
+        "cancer", "depression", "suicide",
+        # Explicit sexual content
+        "porn", "xxx", "sexual",
+        # Personal information placeholders
+        "[NAME]", "[EMAIL]",
+        # Spam-related words
+        "free", "guarantee", "limited time offer",
+        # Potentially triggering words
+        "trauma", "abuse", "trigger warning", "rape", "incest", "abuse", "abusive"
     ]
     
     content_lower = content.lower()

@@ -9,6 +9,7 @@ from app.db.database import SessionLocal
 from app.schemas.sequence import SequenceCreate
 from app.services import sequence_service, openai_service
 import re
+import sentry_sdk
 
 async def generate_and_store_email_sequence(sequence_id: int, sequence: SequenceCreate):
     logger.info(f"Starting email sequence generation for sequence_id: {sequence_id}")
