@@ -164,8 +164,7 @@ async def forgot_password_form(request: Request):
     return templates.TemplateResponse("forgot_password.html", {"request": request})
 
 @router.post("/forgot-password")
-async def forgot_password(request: Request, email: str = Form(...)):
-    db = SessionLocal()
+async def forgot_password(request: Request, email: str = Form(...), db: Session = Depends(get_db)):
     try:
         user = db.query(User).filter(User.email == email).first()
         if user:
@@ -178,8 +177,6 @@ async def forgot_password(request: Request, email: str = Form(...)):
                 send_password_reset_email(db, user.email, reset_token)
             except Exception as e:
                 logger.error(f"Failed to send password reset email to {email}: {str(e)}")
-                # Optionally, you can roll back the database changes if the email fails to send
-                # db.rollback()
                 return templates.TemplateResponse("forgot_password_error.html", {"request": request, "error": "Failed to send reset email. Please try again later."})
 
         # Always return a success message, even if the email doesn't exist (for security reasons)
@@ -187,8 +184,6 @@ async def forgot_password(request: Request, email: str = Form(...)):
     except Exception as e:
         logger.error(f"Error in forgot_password: {str(e)}")
         return templates.TemplateResponse("forgot_password_error.html", {"request": request, "error": "An unexpected error occurred. Please try again later."})
-    finally:
-        db.close()
 
 @router.get("/reset-password/{token}", response_class=HTMLResponse)
 async def reset_password_form(request: Request, token: str, db: Session = Depends(get_db)):

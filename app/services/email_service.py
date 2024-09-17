@@ -92,50 +92,51 @@ def log_memory_usage():
     logger.info(f"Memory usage: {memory_info.rss / 1024 / 1024:.2f} MB")
 
 def check_and_send_scheduled_emails():
-    lock = FileLock("/tmp/check_and_send_scheduled_emails.lock", timeout=300)
+    db = next(get_db())
     try:
-        with lock:
-            with get_db() as db:
-                log_memory_usage()  # Log memory usage at start
-                current_date = datetime.now(TIMEZONE)
-                logger.info(f"Checking for emails scheduled up to {current_date}")
-                
-                emails_to_send = db.query(Email).filter(
-                    Email.scheduled_for <= current_date,
-                    Email.sent_to_brevo == False
-                ).limit(100).all()  # Process max 100 emails per batch
-                
-                logger.info(f"Found {len(emails_to_send)} emails to send")
-                
-                error_count = 0
-                max_errors = 10
+        with db:
+            log_memory_usage()  # Log memory usage at start
+            current_date = datetime.now(TIMEZONE)
+            logger.info(f"Checking for emails scheduled up to {current_date}")
+            
+            emails_to_send = db.query(Email).filter(
+                Email.scheduled_for <= current_date,
+                Email.sent_to_brevo == False
+            ).limit(100).all()  # Process max 100 emails per batch
+            
+            logger.info(f"Found {len(emails_to_send)} emails to send")
+            
+            error_count = 0
+            max_errors = 10
 
-                for email in emails_to_send:
-                    try:
-                        if email.sent_to_brevo:
-                            logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
-                            continue
-                        
-                        logger.info(f"Attempting to send email {email.id} scheduled for {email.scheduled_for}")
-                        api_response = send_email(email.sequence.recipient_email, email, email.sequence)
-                        
-                        email.sent_to_brevo = True
-                        email.sent_to_brevo_at = current_date
-                        email.brevo_message_id = api_response.message_id
-                        db.commit()
-                        logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
-                    except Exception as e:
-                        error_count += 1
-                        if error_count >= max_errors:
-                            logger.error("Too many errors, stopping processing")
-                            break
-                        logger.error(f"Error sending email {email.id}: {str(e)}")
-                        db.rollback()
+            for email in emails_to_send:
+                try:
+                    if email.sent_to_brevo:
+                        logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
+                        continue
+                    
+                    logger.info(f"Attempting to send email {email.id} scheduled for {email.scheduled_for}")
+                    api_response = send_email(email.sequence.recipient_email, email, email.sequence)
+                    
+                    email.sent_to_brevo = True
+                    email.sent_to_brevo_at = current_date
+                    email.brevo_message_id = api_response.message_id
+                    db.commit()
+                    logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
+                except Exception as e:
+                    error_count += 1
+                    if error_count >= max_errors:
+                        logger.error("Too many errors, stopping processing")
+                        break
+                    logger.error(f"Error sending email {email.id}: {str(e)}")
+                    db.rollback()
 
-                log_memory_usage()  # Log memory usage at end
-                time.sleep(60)  # Sleep for 60 seconds after processing a batch
-    except Timeout:
-        logger.info("Another instance is already running. Exiting.")
+            log_memory_usage()  # Log memory usage at end
+            time.sleep(60)  # Sleep for 60 seconds after processing a batch
+    except Exception as e:
+        logger.error(f"Error in check_and_send_scheduled_emails: {str(e)}")
+    finally:
+        db.close()
 
 def send_email_background(db: Session, recipient_email: str, email: EmailContent, inputs: dict):
     try:
