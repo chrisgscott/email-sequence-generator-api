@@ -3,11 +3,10 @@ from wordpress_xmlrpc.methods.posts import NewPost
 from app.core.config import settings
 import re
 
-def create_blog_post(content: str, metadata: dict, api_key) -> str:
+def create_blog_post(content: str, metadata: dict, api_key: APIKey) -> str:
     wp = Client(api_key.wordpress_url, api_key.wordpress_username, api_key.wordpress_password)
     
-    # Anonymize content
-    content = anonymize_content(content)
+    # Anonymize content (already done in format_email_for_blog_post)
     
     # Filter content
     if filter_content(content):
@@ -15,9 +14,12 @@ def create_blog_post(content: str, metadata: dict, api_key) -> str:
     
     # Create WordPress post
     post = WordPressPost()
-    post.title = generate_title(content, metadata)
-    post.content = expand_content(content, metadata)
-    post.terms_names = get_terms(metadata)
+    post.title = metadata['title']
+    post.content = content
+    post.terms_names = {
+        'category': [metadata['category']],
+        'post_tag': metadata['tags']
+    }
     post.post_status = 'draft'
     
     # Post to WordPress

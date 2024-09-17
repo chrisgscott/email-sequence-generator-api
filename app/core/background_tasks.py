@@ -72,6 +72,32 @@ async def process_submission(submission: SubmissionQueue):
         logger.info(f"Starting email generation for sequence ID: {sequence_id}")
         await generate_and_store_email_sequence(sequence_id, sequence_create)
         logger.info(f"Completed email generation for sequence ID: {sequence_id}")
+
+        # Generate and post blog posts for each email
+        api_key_obj = api_key_service.get_api_key(db, submission.api_key)
+        for email in db_sequence.emails:
+            blog_post_content = sequence_generation.format_email_for_blog_post(email)
+            blog_post_metadata = {
+                "title": f"Email Sequence: {email.subject}",
+                "category": "Email Sequences",
+                "tags": [sequence_create.topic, "email marketing"]
+            }
+            try:
+                blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
+                logger.info(f"Blog post created for email {email.id}: {blog_post_result}")
+            except Exception as e:
+                logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
+
+        # Generate and post blog post
+        blog_post_content = await sequence_generation.generate_blog_post(sequence_create)
+        blog_post_metadata = {
+            "title": f"Email Sequence: {sequence_create.topic}",
+            "category": "Email Sequences",
+            "tags": [sequence_create.topic, "email marketing"]
+        }
+        api_key_obj = api_key_service.get_api_key(db, submission.api_key)
+        blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
+        logger.info(f"Blog post created: {blog_post_result}")
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Error processing submission for email {submission.recipient_email}: {str(e)}")
