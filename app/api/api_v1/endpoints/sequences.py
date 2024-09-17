@@ -15,6 +15,7 @@ from app.core.auth import get_current_active_user
 from app.schemas.user import User
 from app.core.background_tasks import SubmissionQueue, process_submission
 from app.services import sequence_service, blog_post_service
+from app.services import webhook_service
 from app.schemas.blog_post import BlogPostCreate, BlogPostResponse
 from app.core.api_key import get_api_key
 
@@ -32,7 +33,7 @@ async def webhook(
         logger.info(f"Received webhook data: {data}")
 
         # Store the raw submission
-        submission_service.store_submission(db, data)
+        webhook_service.create_webhook_submission(db, data)
         logger.info("Webhook submission stored successfully")
 
         # Define required fields
