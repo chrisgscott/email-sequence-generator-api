@@ -52,6 +52,8 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
             depth_instruction=depth_instruction
         )
 
+        prompt += "\n\nFor each email, please include a 'category' field with a single category related to the email, and a 'tags' field with 3-5 tags related to the email. These will be used for blog post metadata."
+
         json_structure = {
             "type": "object",
             "properties": {
@@ -72,7 +74,8 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                                         "type": "string",
                                         "description": f"Content for the '{section.name}' section"
                                     } for section in email_structure
-                                }
+                                },
+                                "required": [section.name for section in email_structure]
                             },
                             "category": {
                                 "type": "string",
@@ -88,7 +91,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                                 "description": "3-5 tags related to this email to be used in a blog post"
                             }
                         },
-                        "required": ["subject", "content"]
+                        "required": ["subject", "content", "category", "tags"]
                     }
                 }
             },
@@ -120,7 +123,9 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                                     "Things to consider": "Remember, Labradors are energetic breeds. Ensure you've exercised your dog before training sessions to help them focus better.",
                                     "If it's not going well": "If your Labrador is struggling with 'stay', try reducing distractions in the environment. Start in a quiet room before moving to more challenging locations.",
                                     "CTA": "Share your 'stay' training progress with us! We'd love to hear how it's going."
-                                }
+                                },
+                                "category": "Pet Training",
+                                "tags": ["Labrador", "Training", "Behavior", "Obedience", "Safety"]
                             }
                         ]
                     }
@@ -152,38 +157,21 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
 
         processed_emails = []
         current_date = start_date if start_date else datetime.now(TIMEZONE) + buffer_time
-        for i, email in enumerate(emails_data, start=1):
-            if 'wrap_up' not in email['content']:
-                if 'wrap_up' in email:
-                    # Move wrap_up inside content if it's at the top level
-                    email['content']['wrap_up'] = email['wrap_up']
-                    del email['wrap_up']
-                else:
-                    logger.warning(f"Content for wrap_up was not generated in email {i}. Generating default wrap_up.")
-                    email['content']['wrap_up'] = "Remember, every day is a new opportunity for growth and connection. Embrace it!"
-
-            if 'content' not in email:
-                logger.error(f"Missing 'content' key in email {start_index + i + 1}")
-                email['content'] = {}
-            
-            for section in email_structure:
-                if section.name not in email['content']:
-                    logger.warning(f"Content for {section.name} was not generated in email {start_index + i + 1}")
-                    email['content'][section.name] = f"Content for {section.name} was not generated."
-            
-            if 'subject' not in email:
-                logger.error(f"Missing 'subject' key in email {start_index + i + 1}")
-                email['subject'] = f"Email {start_index + i + 1}"
-
-            scheduled_for = current_date + timedelta(days=i * days_between_emails)
-            
-            processed_emails.append(EmailBase(
-                subject=email['subject'],
-                content=email['content'],
-                scheduled_for=scheduled_for,
-                category=email.get('category'),
-                tags=email.get('tags', [])
-            ))
+        for i, email_data in enumerate(emails_data):
+            try:
+                content = {section.name: email_data['content'].get(section.name, '') for section in email_structure}
+                email = EmailBase(
+                    subject=email_data['subject'],
+                    content=content,
+                    category=email_data['category'],
+                    tags=email_data['tags'],
+                    scheduled_for=current_date + timedelta(days=i * days_between_emails)
+                )
+                processed_emails.append(email)
+            except KeyError as e:
+                logger.error(f"KeyError processing email {start_index + i + 1}: {str(e)}")
+                logger.error(f"Email data: {email_data}")
+                raise AppException(f"Missing required field in email data: {str(e)}", status_code=500)
 
         logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)}")
         return processed_emails
