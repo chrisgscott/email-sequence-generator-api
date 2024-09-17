@@ -18,6 +18,7 @@ from app.services import sequence_service, blog_post_service
 from app.services import webhook_service
 from app.schemas.blog_post import BlogPostCreate, BlogPostResponse
 from app.core.api_key import get_api_key
+from app.models.api_key import APIKey
 
 router = APIRouter()
 
