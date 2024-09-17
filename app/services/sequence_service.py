@@ -113,3 +113,6 @@ def get_existing_sequence(db: Session, form_id: str, recipient_email: str, input
 
 def get_email_count(db: Session, sequence_id: int) -> int:
     return db.query(func.count(Email.id)).filter(Email.sequence_id == sequence_id).scalar()
+
+def get_emails_for_sequence(db: Session, sequence_id: int):
+    return db.query(Email).filter(Email.sequence_id == sequence_id).order_by(Email.scheduled_for).all()

@@ -97,7 +97,6 @@ async def process_submission(submission: SubmissionQueue):
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
                 # Consider adding a retry mechanism or alternative action here
 
-        # ... rest of the existing code ...
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Error processing submission for email {submission.recipient_email}: {str(e)}")
