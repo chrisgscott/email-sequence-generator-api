@@ -2,6 +2,7 @@ import secrets
 from sqlalchemy.orm import Session
 from app.models.api_key import APIKey
 from datetime import datetime
+from typing import List
 
 def generate_api_key(db: Session, user_id: int) -> str:
     key = secrets.token_urlsafe(32)
@@ -25,3 +26,6 @@ def deactivate_api_key(db: Session, key: str) -> bool:
 
 def get_api_key(db: Session, api_key: str) -> APIKey:
     return db.query(APIKey).filter(APIKey.key == api_key, APIKey.is_active == True).first()
+
+def get_all_active_domains(db: Session) -> List[str]:
+    return [api_key.domain for api_key in db.query(APIKey).filter(APIKey.is_active == True).all() if api_key.domain]

@@ -8,6 +8,7 @@ from app.db.database import engine, Base, SessionLocal, get_db
 from app.api.api_v1.api import router as api_router
 from app.services.email_service import check_and_send_scheduled_emails, check_and_schedule_emails
 from app.services import api_key_service
+from app.services.api_key_service import get_all_active_domains
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.core.auth import get_current_active_user
@@ -36,10 +37,16 @@ sentry_sdk.init(
 
 app = FastAPI(title=settings.PROJECT_NAME, version=settings.PROJECT_VERSION)
 
-# Add CORS middleware
+def get_allowed_origins():
+    db = SessionLocal()
+    try:
+        return get_all_active_domains(db)
+    finally:
+        db.close()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dailyjournalprompts.co"],
+    allow_origins=get_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
