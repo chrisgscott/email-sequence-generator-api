@@ -26,7 +26,7 @@ def create_user_with_api_key(db: Session, user: UserCreate):
         user_id=db_user.id,
         wordpress_url=user.wordpress_url,
         wordpress_username=user.wordpress_username,
-        wordpress_password=user.wordpress_password
+        wordpress_app_password=user.wordpress_app_password
     )
     db.add(db_api_key)
     db.commit()

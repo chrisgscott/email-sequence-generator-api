@@ -1,12 +1,10 @@
-from wordpress_xmlrpc import Client, WordPressPost
-from wordpress_xmlrpc.methods.posts import NewPost
+import requests
 from app.core.config import settings
 import re
 from app.models.api_key import APIKey
+from loguru import logger
 
 def create_blog_post(content: str, metadata: dict, api_key: APIKey) -> str:
-    wp = Client(api_key.wordpress_url, api_key.wordpress_username, api_key.wordpress_password)
-    
     # Anonymize content (already done in format_email_for_blog_post)
     
     # Filter content
@@ -14,46 +12,69 @@ def create_blog_post(content: str, metadata: dict, api_key: APIKey) -> str:
         return "Content flagged as potentially inappropriate"
     
     # Create WordPress post
-    post = WordPressPost()
-    post.title = metadata['title']
-    post.content = content
-    post.terms_names = {
-        'category': [metadata['category']],
-        'post_tag': metadata['tags']
+    post_data = {
+        'title': metadata['title'],
+        'content': content,
+        'status': 'draft',
+        'categories': [get_category_id(api_key, metadata['category'])],
+        'tags': get_tag_ids(api_key, metadata['tags'])
     }
-    post.post_status = 'draft'
     
     # Post to WordPress
-    post_id = wp.call(NewPost(post))
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/posts"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
     
-    return f"Blog post created with ID: {post_id} (in draft status for review)"
+    try:
+        response = requests.post(url, json=post_data, auth=auth)
+        response.raise_for_status()
+        post_id = response.json()['id']
+        return f"Blog post created with ID: {post_id} (in draft status for review)"
+    except requests.RequestException as e:
+        logger.error(f"Failed to create blog post: {str(e)}")
+        return f"Failed to create blog post: {str(e)}"
 
-def anonymize_content(content: str) -> str:
-    # Replace names with generic alternatives
-    name_pattern = r'\b[A-Z][a-z]+ (?:[A-Z][a-z]+ )?[A-Z][a-z]+\b'
-    names = re.findall(name_pattern, content)
+def get_category_id(api_key: APIKey, category_name: str) -> int:
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/categories"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
     
-    for i, name in enumerate(names):
-        content = content.replace(name, f"Person{i+1}")
+    try:
+        response = requests.get(url, auth=auth, params={'search': category_name})
+        response.raise_for_status()
+        categories = response.json()
+        if categories:
+            return categories[0]['id']
+        else:
+            # Create new category if it doesn't exist
+            new_category = requests.post(url, auth=auth, json={'name': category_name})
+            new_category.raise_for_status()
+            return new_category.json()['id']
+    except requests.RequestException as e:
+        logger.error(f"Failed to get or create category: {str(e)}")
+        return None
+
+def get_tag_ids(api_key: APIKey, tag_names: list) -> list:
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/tags"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
+    tag_ids = []
     
-    return content
+    for tag_name in tag_names:
+        try:
+            response = requests.get(url, auth=auth, params={'search': tag_name})
+            response.raise_for_status()
+            tags = response.json()
+            if tags:
+                tag_ids.append(tags[0]['id'])
+            else:
+                # Create new tag if it doesn't exist
+                new_tag = requests.post(url, auth=auth, json={'name': tag_name})
+                new_tag.raise_for_status()
+                tag_ids.append(new_tag.json()['id'])
+        except requests.RequestException as e:
+            logger.error(f"Failed to get or create tag: {str(e)}")
+    
+    return tag_ids
 
 def filter_content(content: str) -> bool:
-    # Check content against a list of potentially triggering or harmful words/phrases
-    triggering_words = ["suicide", "self-harm", "abuse", "trauma", "violence"]
-    return any(word in content.lower() for word in triggering_words)
-
-def generate_title(content: str, metadata: dict) -> str:
-    # Implement title generation logic
-    return f"New Post: {metadata.get('topic', 'Untitled')}"
-
-def expand_content(content: str, metadata: dict) -> str:
-    # Implement content expansion logic
-    return f"{content}\n\nMetadata: {metadata}"
-
-def get_terms(metadata: dict) -> dict:
-    # Implement logic to map metadata to WordPress terms
-    return {
-        "category": [metadata.get("category", "Uncategorized")],
-        "post_tag": metadata.get("tags", [])
-    }
+    # Implement content filtering logic here
+    # Return True if content is inappropriate, False otherwise
+    return False

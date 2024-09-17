@@ -11,6 +11,8 @@ from typing import List
 from datetime import time
 import sentry_sdk
 
+from app.services import sequence_generation
+
 class SubmissionQueue(BaseModel):
     form_id: str
     topic: str
@@ -92,6 +94,7 @@ async def process_submission(submission: SubmissionQueue):
                 logger.info(f"Blog post created for email {email.id}: {blog_post_result}")
             except Exception as e:
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
+                # Consider adding a retry mechanism or alternative action here
 
         # Generate and post blog post for the entire sequence
         blog_post_content = await sequence_generation.generate_blog_post(sequence_create)
