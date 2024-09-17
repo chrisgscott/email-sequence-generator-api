@@ -2,6 +2,7 @@ from wordpress_xmlrpc import Client, WordPressPost
 from wordpress_xmlrpc.methods.posts import NewPost
 from app.core.config import settings
 import re
+from app.models.api_key import APIKey
 
 def create_blog_post(content: str, metadata: dict, api_key: APIKey) -> str:
     wp = Client(api_key.wordpress_url, api_key.wordpress_username, api_key.wordpress_password)
