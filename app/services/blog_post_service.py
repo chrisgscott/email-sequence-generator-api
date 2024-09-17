@@ -3,6 +3,7 @@ from app.core.config import settings
 import re
 from app.models.api_key import APIKey
 from loguru import logger
+from typing import Dict
 
 def create_blog_post(content: Dict[str, str], metadata: dict, api_key: APIKey) -> str:
     # Filter content
