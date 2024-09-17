@@ -141,20 +141,13 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         db.close()
 
 def format_email_for_blog_post(email: EmailBase) -> str:
-    blog_post_content = f"---\n"
-    blog_post_content += f"title: {email.subject}\n"
-    if hasattr(email, 'category'):
-        blog_post_content += f"category: {email.category}\n"
-    if hasattr(email, 'tags'):
-        blog_post_content += f"tags: {', '.join(email.tags)}\n"
-    blog_post_content += f"---\n\n"
-    blog_post_content += f"<h1>{email.subject}</h1>\n\n"
+    blog_post_content = ""
     
     for section_content in email.content.values():
-        blog_post_content += f"<p>{section_content}</p>\n\n"
+        blog_post_content += f"{section_content}\n\n"
     
     # Remove any personal information or placeholders
     blog_post_content = re.sub(r'\[NAME\]', 'Reader', blog_post_content)
     blog_post_content = re.sub(r'\[EMAIL\]', 'your email', blog_post_content)
     
-    return blog_post_content
+    return blog_post_content.strip()
