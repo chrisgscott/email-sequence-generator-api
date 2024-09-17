@@ -78,12 +78,14 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
     if not sequence:
         raise AppException(f"Sequence with id {sequence_id} not found", status_code=404)
     
-    email_data = [
+        email_data = [
         {
             "sequence_id": sequence_id,
             "subject": email.subject,
             "content": email.content,
-            "scheduled_for": email.scheduled_for
+            "scheduled_for": email.scheduled_for,
+            "category": email.category,
+            "tags": email.tags
         }
         for email in emails
     ]

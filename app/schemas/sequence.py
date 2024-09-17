@@ -23,9 +23,9 @@ class EmailSection(BaseModel):
 class EmailBase(BaseModel):
     subject: str
     content: Dict[str, str]
-    scheduled_for: datetime
-    category: str
-    tags: List[str]
+    scheduled_for: Optional[datetime] = None
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 class EmailContent(EmailBase):
     pass

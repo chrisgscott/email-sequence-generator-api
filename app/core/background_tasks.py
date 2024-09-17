@@ -82,7 +82,7 @@ async def process_submission(submission: SubmissionQueue):
             raise ValueError(f"Invalid API key: {submission.api_key}")
 
         # Generate and post blog posts for each email in the sequence
-        emails = sequence_service.get_emails_for_sequence(db, sequence_create.id)
+        emails = sequence_service.get_emails_for_sequence(db, db_sequence.id)
         for email in emails:
             blog_post_content = sequence_generation.format_email_for_blog_post(email)
             blog_post_metadata = {

@@ -25,5 +25,7 @@ class Email(Base):
     sent_to_brevo = Column(Boolean, default=False)
     sent_to_brevo_at = Column(DateTime, nullable=True)
     brevo_message_id = Column(String, nullable=True)
+    category = Column(String)
+    tags = Column(JSON)
 
     sequence = relationship("Sequence", back_populates="emails")
