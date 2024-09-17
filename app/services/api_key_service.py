@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import List
 import logging
 
+logger = logging.getLogger(__name__)
+
 def generate_api_key(db: Session, user_id: int) -> str:
     key = secrets.token_urlsafe(32)
     db_api_key = APIKey(key=key, user_id=user_id)
