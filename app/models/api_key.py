@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from app.db.database import Base
 
 class APIKey(Base):
@@ -11,3 +12,5 @@ class APIKey(Base):
     wordpress_username = Column(String)
     wordpress_app_password = Column(String)
     is_active = Column(Boolean, default=True)
+
+    user = relationship("User", back_populates="api_keys")
