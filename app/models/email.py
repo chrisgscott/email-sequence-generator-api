@@ -3,6 +3,12 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db.database import Base
+from pydantic import BaseModel
+from typing import Dict
+
+class EmailBase(BaseModel):
+    subject: str
+    content: Dict[str, str]
 
 class Email(Base):
     __tablename__ = "emails"
