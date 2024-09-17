@@ -33,7 +33,7 @@ def get_api_key(db: Session, api_key: str) -> APIKey:
 def get_all_active_domains(db: Session) -> List[str]:
     active_api_keys = db.query(APIKey).filter(APIKey.is_active == True, APIKey.wordpress_url.isnot(None)).all()
     domains = list(set(extract_domain(api_key.wordpress_url) for api_key in active_api_keys))
-    logger.info(f"Active domains: {domains}")
+    logger.info(f"Active domains: {['https://' + domain for domain in domains]}")
     return domains
 
 def extract_domain(url: str) -> str:
