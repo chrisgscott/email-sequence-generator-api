@@ -104,10 +104,12 @@ async def process_submission(submission: SubmissionQueue):
                 # Set up custom post type and fields
         try:
             blog_post_service.setup_custom_post_type_and_fields(api_key_obj, submission.custom_post_type, submission.email_structure)
-            logger.info(f"Custom post type and fields set up for '{submission.custom_post_type}'")
-        except Exception as e:
-            logger.error(f"Failed to set up custom post type and fields: {str(e)}")
-            # Log the error but continue processing
+            logger.info(f"Custom post type '{submission.custom_post_type}' is ready for use")
+        except AppException as e:
+            logger.error(f"Failed to set up custom post type: {str(e)}")
+            # Here you might want to send a notification to the user or admin
+            # For now, we'll continue processing but skip blog post creation
+            continue
 
     except Exception as e:
         sentry_sdk.capture_exception(e)

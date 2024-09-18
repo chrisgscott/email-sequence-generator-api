@@ -114,36 +114,14 @@ def filter_content(content: str) -> bool:
     return False
 
 def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
-    # Check if the custom post type exists
-    url = f"{api_key.wordpress_url}/wp-json/wp/v2/types/{custom_post_type}"
+    # Check if the custom post type exists and is accessible via REST API
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/{custom_post_type}"
     auth = (api_key.wordpress_username, api_key.wordpress_app_password)
 
     try:
         response = requests.get(url, auth=auth)
         response.raise_for_status()
-        logger.info(f"Custom post type '{custom_post_type}' exists")
+        logger.info(f"Custom post type '{custom_post_type}' exists and is accessible via REST API")
     except requests.RequestException as e:
-        logger.error(f"Custom post type '{custom_post_type}' does not exist: {str(e)}")
-        logger.info(f"Attempting to create custom post type '{custom_post_type}'")
-        create_custom_post_type(api_key, custom_post_type)
-
-def create_custom_post_type(api_key: APIKey, custom_post_type: str) -> None:
-    url = f"{api_key.wordpress_url}/wp-json/wp/v2/types"
-    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
-
-    post_type_data = {
-        'name': custom_post_type.replace('_', ' ').title(),
-        'slug': custom_post_type,
-        'supports': ['title', 'editor', 'author', 'thumbnail', 'excerpt', 'custom-fields'],
-        'show_in_rest': True,
-        'public': True,
-        'has_archive': True,
-    }
-
-    try:
-        response = requests.post(url, json=post_type_data, auth=auth)
-        response.raise_for_status()
-        logger.info(f"Custom post type '{custom_post_type}' created successfully")
-    except requests.RequestException as e:
-        logger.error(f"Failed to create custom post type '{custom_post_type}': {str(e)}")
-        raise AppException(f"Failed to create custom post type: {str(e)}", status_code=500)
+        logger.error(f"Custom post type '{custom_post_type}' does not exist or is not accessible via REST API: {str(e)}")
+        raise AppException(f"Custom post type '{custom_post_type}' is not properly set up in WordPress. Please ensure it's registered with 'show_in_rest' => true", status_code=404)
