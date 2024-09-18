@@ -120,6 +120,35 @@ def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, em
         response = requests.get(url, auth=auth)
         response.raise_for_status()
         logger.info(f"Custom post type '{custom_post_type}' exists and is accessible via REST API")
+        
+        # Register custom fields
+        register_custom_fields(api_key, custom_post_type, email_structure)
     except requests.RequestException as e:
         logger.error(f"Custom post type '{custom_post_type}' does not exist or is not accessible via REST API: {str(e)}")
         raise AppException(f"Custom post type '{custom_post_type}' is not properly set up in WordPress. Please ensure it's registered with 'show_in_rest' => true", status_code=404)
+
+def register_custom_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
+    url = f"{api_key.wordpress_url}/wp-json/custom-fields/v1/register"
+    auth = (api_key.wordpress_username, api_key.wordpress_app_password)
+
+    custom_fields = [
+        {
+            "name": f"email_section_{section.name}",
+            "type": "string",
+            "description": section.description
+        }
+        for section in email_structure
+    ]
+
+    data = {
+        "post_type": custom_post_type,
+        "fields": custom_fields
+    }
+
+    try:
+        response = requests.post(url, json=data, auth=auth)
+        response.raise_for_status()
+        logger.info(f"Custom fields registered for post type '{custom_post_type}'")
+    except requests.RequestException as e:
+        logger.error(f"Failed to register custom fields: {str(e)}")
+        raise AppException(f"Failed to register custom fields: {str(e)}", status_code=500)
