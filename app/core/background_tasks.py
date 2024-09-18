@@ -57,7 +57,6 @@ async def process_submission(submission: SubmissionQueue):
             preferred_time=submission.preferred_time,
             timezone=submission.timezone,
             custom_post_type=submission.custom_post_type
-
         )
         logger.info(f"Creating sequence for email: {submission.recipient_email}")
         db_sequence = sequence_service.create_sequence(db, sequence_create)
@@ -65,15 +64,13 @@ async def process_submission(submission: SubmissionQueue):
         logger.info(f"Sequence created with ID: {sequence_id}")
 
         # Subscribe the email to the Brevo list
-        logger.info(f"About to attempt Brevo subscription for email: {submission.recipient_email}")
         logger.info(f"Attempting to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
         try:
             await subscribe_to_brevo_list(submission.recipient_email, submission.brevo_list_id)
             logger.info(f"Successfully subscribed {submission.recipient_email} to Brevo list {submission.brevo_list_id}")
         except Exception as e:
             logger.error(f"Failed to subscribe {submission.recipient_email} to Brevo list {submission.brevo_list_id}: {str(e)}")
-            # Optionally, you can decide whether to continue with email generation or not
-            # For now, we'll continue even if Brevo subscription fails
+            # Continue with email generation even if Brevo subscription fails
 
         logger.info(f"Starting email generation for sequence ID: {sequence_id}")
         await generate_and_store_email_sequence(sequence_id, sequence_create)
@@ -84,6 +81,16 @@ async def process_submission(submission: SubmissionQueue):
         if not api_key_obj:
             raise ValueError(f"Invalid API key: {submission.api_key}")
 
+        # Set up custom post type and fields
+        try:
+            blog_post_service.setup_custom_post_type_and_fields(api_key_obj, submission.custom_post_type, submission.email_structure)
+            logger.info(f"Custom post type '{submission.custom_post_type}' is ready for use")
+        except AppException as e:
+            logger.error(f"Failed to set up custom post type: {str(e)}")
+            # Here you might want to send a notification to the user or admin
+            # For now, we'll continue processing but skip blog post creation
+            return
+
         # Generate and post blog posts for each email in the sequence
         emails = sequence_service.get_emails_for_sequence(db, db_sequence.id)
         for email in emails:
@@ -92,7 +99,7 @@ async def process_submission(submission: SubmissionQueue):
                 "title": f"{email.subject}",
                 "category": email.category,
                 "tags": email.tags,
-                "custom_post_type": submission.custom_post_type  # Add this line
+                "custom_post_type": submission.custom_post_type
             }
             try:
                 blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
@@ -100,16 +107,6 @@ async def process_submission(submission: SubmissionQueue):
             except Exception as e:
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
                 # Consider adding a retry mechanism or alternative action here
-
-                # Set up custom post type and fields
-        try:
-            blog_post_service.setup_custom_post_type_and_fields(api_key_obj, submission.custom_post_type, submission.email_structure)
-            logger.info(f"Custom post type '{submission.custom_post_type}' is ready for use")
-        except AppException as e:
-            logger.error(f"Failed to set up custom post type: {str(e)}")
-            # Here you might want to send a notification to the user or admin
-            # For now, we'll continue processing but skip blog post creation
-            continue
 
     except Exception as e:
         sentry_sdk.capture_exception(e)
