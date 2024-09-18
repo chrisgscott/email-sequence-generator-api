@@ -8,10 +8,10 @@ from app.core.exceptions import AppException
 from app.schemas.sequence import EmailSection
 
 def create_blog_post(content: Dict[str, str], metadata: dict, api_key: APIKey) -> str:
-    # Filter content
-    for section_content in content.values():
-        if filter_content(section_content):
-            return "Content flagged as potentially inappropriate"
+    # Content filtering is temporarily disabled
+    # for section_content in content.values():
+    #     if filter_content(section_content):
+    #         return "Content flagged as potentially inappropriate"
     
     # Create WordPress post
     post_data = {
@@ -80,36 +80,36 @@ def get_tag_ids(api_key: APIKey, tag_names: list) -> list:
     
     return tag_ids
 
-def filter_content(content: str) -> bool:
-    inappropriate_words = [
-        # Profanity and explicit language
-        "fuck", "shit", "ass", "damn", "dick", "penis", "cock", "pussy", "vagina",
-        # Hate speech or discriminatory terms
-        "racist", "sexist", "homophobic", "jew", "jewish", "muslim", "palestine", "palestinian", "gaza", "israel",
-        # Violence-related words
-        "kill", "murder", "attack", "assassinate",
-        # Illegal activities
-        "drugs", "theft", "fraud",
-        # Controversial political terms
-        "conspiracy", "extremist", "trump", "kamala", "republican", "democrat", "election", "president",
-        # Sensitive health-related terms
-        "cancer", "depression", "suicide",
-        # Explicit sexual content
-        "porn", "xxx", "sexual", "sex",
-        # Personal information placeholders
-        "[NAME]", "[EMAIL]",
-        # Spam-related words
-        "limited time offer",
-        # Potentially triggering words
-        "trauma", "abuse", "trigger warning", "rape", "incest", "abuse", "abusive"
-    ]
+# def filter_content(content: str) -> bool:
+#     inappropriate_words = [
+#         # Profanity and explicit language
+#         "fuck", "shit", "ass", "damn", "dick", "penis", "cock", "pussy", "vagina",
+#         # Hate speech or discriminatory terms
+#         "racist", "sexist", "homophobic", "jew", "jewish", "muslim", "palestine", "palestinian", "gaza", "israel",
+#         # Violence-related words
+#         "kill", "murder", "attack", "assassinate",
+#         # Illegal activities
+#         "drugs", "theft", "fraud",
+#         # Controversial political terms
+#         "conspiracy", "extremist", "trump", "kamala", "republican", "democrat", "election", "president",
+#         # Sensitive health-related terms
+#         "cancer", "depression", "suicide",
+#         # Explicit sexual content
+#         "porn", "xxx", "sexual", "sex",
+#         # Personal information placeholders
+#         "[NAME]", "[EMAIL]",
+#         # Spam-related words
+#         "limited time offer",
+#         # Potentially triggering words
+#         "trauma", "abuse", "trigger warning", "rape", "incest", "abuse", "abusive"
+#     ]
     
-    content_lower = content.lower()
-    for word in inappropriate_words:
-        if word.lower() in content_lower:
-            return True
+#     content_lower = content.lower()
+#     for word in inappropriate_words:
+#         if word.lower() in content_lower:
+#             return True
     
-    return False
+#     return False
 
 def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
     # Check if the custom post type exists and is accessible via REST API
