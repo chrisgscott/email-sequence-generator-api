@@ -19,14 +19,12 @@ def create_blog_post(content: Dict[str, str], metadata: dict, api_key: APIKey) -
         'status': 'draft',
         'categories': [get_category_id(api_key, metadata['category'])],
         'tags': get_tag_ids(api_key, metadata['tags']),
-        'content': '',  # We'll update this with the combined content
+        'content': '',  # Leave the content empty
     }
-    
-    # Combine content into the post content
-    combined_content = ""
-    for field_name, field_content in content.items():
-        combined_content += f"<h2>{field_name.capitalize()}</h2>\n{field_content}\n\n"
-    post_data['content'] = combined_content
+
+    # Add custom fields
+    if 'custom_fields' in metadata:
+        post_data['meta'] = metadata['custom_fields']
 
     # Post to WordPress
     url = f"{api_key.wordpress_url}/wp-json/wp/v2/{metadata['custom_post_type']}"

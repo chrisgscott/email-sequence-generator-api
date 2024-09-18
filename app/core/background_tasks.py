@@ -99,8 +99,14 @@ async def process_submission(submission: SubmissionQueue):
                 "title": f"{email.subject}",
                 "category": email.category,
                 "tags": email.tags,
-                "custom_post_type": submission.custom_post_type
+                "custom_post_type": submission.custom_post_type,
+                "custom_fields": {}
             }
+            
+            # Add each email section as a custom field
+            for section_name, section_content in blog_post_content.items():
+                blog_post_metadata["custom_fields"][f"email_section_{section_name}"] = section_content
+
             try:
                 blog_post_result = blog_post_service.create_blog_post(blog_post_content, blog_post_metadata, api_key_obj)
                 logger.info(f"Blog post created for email {email.id}: {blog_post_result}")
