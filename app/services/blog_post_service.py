@@ -25,18 +25,23 @@ def create_blog_post(content: Dict[str, str], metadata: dict, api_key: APIKey) -
     # Add custom fields
     if 'custom_fields' in metadata:
         post_data['meta'] = metadata['custom_fields']
+        logger.info(f"Custom fields being sent: {metadata['custom_fields']}")
 
     # Post to WordPress
     url = f"{api_key.wordpress_url}/wp-json/wp/v2/{metadata['custom_post_type']}"
     auth = (api_key.wordpress_username, api_key.wordpress_app_password)
     
+    logger.info(f"Attempting to create blog post with data: {post_data}")
+
     try:
         response = requests.post(url, json=post_data, auth=auth)
         response.raise_for_status()
         post_id = response.json()['id']
+        logger.info(f"Blog post created successfully. Response: {response.text}")
         return f"Blog post created with ID: {post_id} (in draft status for review)"
     except requests.RequestException as e:
         logger.error(f"Failed to create blog post: {str(e)}")
+        logger.error(f"Response content: {e.response.text if e.response else 'No response content'}")
         return f"Failed to create blog post: {str(e)}"
 
 def get_category_id(api_key: APIKey, category_name: str) -> int:
@@ -145,10 +150,15 @@ def register_custom_fields(api_key: APIKey, custom_post_type: str, email_structu
         "fields": custom_fields
     }
 
+    logger.info(f"Attempting to register custom fields for post type '{custom_post_type}'")
+    logger.info(f"Request data: {data}")
+
     try:
         response = requests.post(url, json=data, auth=auth)
         response.raise_for_status()
+        logger.info(f"Custom fields registration response: {response.text}")
         logger.info(f"Custom fields registered for post type '{custom_post_type}'")
     except requests.RequestException as e:
         logger.error(f"Failed to register custom fields: {str(e)}")
+        logger.error(f"Response content: {e.response.text if e.response else 'No response content'}")
         raise AppException(f"Failed to register custom fields: {str(e)}", status_code=500)
