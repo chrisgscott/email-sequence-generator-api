@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 configuration = sib_api_v3_sdk.Configuration()
 configuration.api_key['api-key'] = settings.BREVO_API_KEY
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def send_email(recipient_email: str, email: Email, sequence: Sequence):
     try:
         logger.info(f"Preparing to send email to {recipient_email}")
@@ -48,12 +47,17 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         # Ensure email.content is properly accessed
         email_content = email.content if isinstance(email.content, dict) else email.content.dict()
 
+        # Ensure subject is properly set
+        subject = email_content.get("subject", "No Subject")
+        if not subject or subject == "No Subject":
+            logger.warning(f"Email {email.id} has no subject")
+
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
-            template_id=sequence.brevo_template_id,  # Use the sequence's brevo_template_id
+            template_id=sequence.brevo_template_id,
             params={
-                "subject": email_content.get("subject", "No Subject"),
-                **email_content,
+                "subject": subject,
+                **{k: v for k, v in email_content.items() if k != "subject"},
                 **sequence.inputs
             },
             headers={
@@ -62,7 +66,7 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
             scheduled_at=scheduled_at
         )
         
-        logger.info(f"Sending email with subject: {email_content.get('subject', 'No Subject')}")
+        logger.info(f"Sending email with subject: {subject}")
         
         logger.info(f"Making API call to Brevo with the following details:")
         logger.info(f"To: {send_smtp_email.to}")
