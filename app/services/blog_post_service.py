@@ -133,21 +133,22 @@ def setup_custom_post_type_and_fields(api_key: APIKey, custom_post_type: str, em
         raise AppException(f"Custom post type '{custom_post_type}' is not properly set up in WordPress. Please ensure it's registered with 'show_in_rest' => true", status_code=404)
 
 def register_custom_fields(api_key: APIKey, custom_post_type: str, email_structure: List[EmailSection]) -> None:
-    url = f"{api_key.wordpress_url}/wp-json/custom-fields/v1/register"
+    url = f"{api_key.wordpress_url}/wp-json/wp/v2/posts"
     auth = (api_key.wordpress_username, api_key.wordpress_app_password)
 
-    custom_fields = [
-        {
-            "name": f"email_section_{section.name}",
+    custom_fields = {
+        f"email_section_{section.name}": {
             "type": "string",
             "description": section.description
         }
         for section in email_structure
-    ]
+    }
 
     data = {
-        "post_type": custom_post_type,
-        "fields": custom_fields
+        "title": "Temporary post to register custom fields",
+        "content": "This is a temporary post to register custom fields.",
+        "status": "draft",
+        "meta": custom_fields
     }
 
     logger.info(f"Attempting to register custom fields for post type '{custom_post_type}'")
@@ -158,6 +159,13 @@ def register_custom_fields(api_key: APIKey, custom_post_type: str, email_structu
         response.raise_for_status()
         logger.info(f"Custom fields registration response: {response.text}")
         logger.info(f"Custom fields registered for post type '{custom_post_type}'")
+        
+        # Delete the temporary post
+        temp_post_id = response.json()['id']
+        delete_url = f"{api_key.wordpress_url}/wp-json/wp/v2/posts/{temp_post_id}"
+        delete_response = requests.delete(delete_url, auth=auth)
+        delete_response.raise_for_status()
+        logger.info(f"Temporary post deleted successfully")
     except requests.RequestException as e:
         logger.error(f"Failed to register custom fields: {str(e)}")
         logger.error(f"Response content: {e.response.text if e.response else 'No response content'}")

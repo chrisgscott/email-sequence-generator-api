@@ -6,6 +6,7 @@ from app.schemas.sequence import SequenceCreate, EmailSection
 from app.services import sequence_service, api_key_service, blog_post_service
 from app.services.sequence_generation import generate_and_store_email_sequence, format_email_for_blog_post
 from app.services.brevo_service import subscribe_to_brevo_list
+from app.core.exceptions import AppException
 from loguru import logger
 from typing import List
 from datetime import time
@@ -114,10 +115,12 @@ async def process_submission(submission: SubmissionQueue):
                 logger.error(f"Failed to create blog post for email {email.id}: {str(e)}")
                 # Consider adding a retry mechanism or alternative action here
 
+    except AppException as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"AppException processing submission for email {submission.recipient_email}: {str(e)}")
     except Exception as e:
         sentry_sdk.capture_exception(e)
-        logger.error(f"Error processing submission for email {submission.recipient_email}: {str(e)}")
-        raise
+        logger.error(f"Unexpected error processing submission for email {submission.recipient_email}: {str(e)}")
     finally:
         logger.info(f"Closing database connection for email: {submission.recipient_email}")
         db.close()
