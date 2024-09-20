@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from app.api.admin import admin
+from filelock import FileLock, Timeout
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -70,8 +71,12 @@ async def root(request: Request):
 scheduler = BackgroundScheduler()
 
 def locked_check_and_send_scheduled_emails():
+    lock = FileLock("email_sending.lock", timeout=10)  # 10 seconds timeout
     try:
-        check_and_send_scheduled_emails()
+        with lock:
+            check_and_send_scheduled_emails()
+    except Timeout:
+        logger.info("Another instance of check_and_send_scheduled_emails is already running. Skipping this run.")
     except Exception as e:
         logger.error(f"Error in scheduled job: {str(e)}")
 

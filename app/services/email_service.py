@@ -104,25 +104,19 @@ def log_memory_usage():
 def check_and_send_scheduled_emails():
     db = next(get_db())
     try:
-        with db:
-            log_memory_usage()  # Log memory usage at start
+        with db.begin():  # Start a transaction
+            log_memory_usage()
             current_date = datetime.now(TIMEZONE)
             logger.info(f"Checking for emails scheduled up to {current_date}")
             
             emails_to_send = db.query(Email).filter(
                 Email.scheduled_for <= current_date,
                 Email.sent_to_brevo == False
-            ).limit(100).all()  # Process max 100 emails per batch
+            ).with_for_update().limit(100).all()  # Lock the rows for update
             
             logger.info(f"Found {len(emails_to_send)} emails to send")
             
-            error_count = 0
-            max_errors = 10
-
             for email in emails_to_send:
-                logger.info(f"Preparing to send email {email.id}:")
-                logger.info(f"Subject: {email.subject}")
-                logger.info(f"Content: {email.content}")
                 try:
                     if email.sent_to_brevo:
                         logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
@@ -134,20 +128,16 @@ def check_and_send_scheduled_emails():
                     email.sent_to_brevo = True
                     email.sent_to_brevo_at = current_date
                     email.brevo_message_id = api_response.message_id
-                    db.commit()
                     logger.info(f"Email {email.id} sent successfully (originally scheduled for {email.scheduled_for})")
                 except Exception as e:
-                    error_count += 1
-                    if error_count >= max_errors:
-                        logger.error("Too many errors, stopping processing")
-                        break
                     logger.error(f"Error sending email {email.id}: {str(e)}")
-                    db.rollback()
-
-            log_memory_usage()  # Log memory usage at end
-            time.sleep(60)  # Sleep for 60 seconds after processing a batch
+                    # Don't raise the exception, continue with the next email
+            
+            db.commit()  # Commit the transaction
+            log_memory_usage()
     except Exception as e:
         logger.error(f"Error in check_and_send_scheduled_emails: {str(e)}")
+        db.rollback()
     finally:
         db.close()
 
