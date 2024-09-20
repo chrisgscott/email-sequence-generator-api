@@ -45,10 +45,16 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         scheduled_at = local_scheduled_time.strftime(f'%Y-%m-%dT%H:%M:%S{utc_offset[:3]}:{utc_offset[3:]}')
 
         # Ensure email.content is properly accessed
-        email_content = email.content if isinstance(email.content, dict) else email.content.dict()
+        email_content = email.content if isinstance(email.content, dict) else email.content
+
+        # Log the email object and its content
+        logger.info(f"Email object: {email}")
+        logger.info(f"Email content: {email_content}")
 
         # Ensure subject is properly set
-        subject = email_content.get("subject", "No Subject")
+        subject = email.subject if email.subject else email_content.get("subject", "No Subject")
+        logger.info(f"Retrieved subject: {subject}")
+
         if not subject or subject == "No Subject":
             logger.warning(f"Email {email.id} has no subject")
 
@@ -114,6 +120,9 @@ def check_and_send_scheduled_emails():
             max_errors = 10
 
             for email in emails_to_send:
+                logger.info(f"Preparing to send email {email.id}:")
+                logger.info(f"Subject: {email.subject}")
+                logger.info(f"Content: {email.content}")
                 try:
                     if email.sent_to_brevo:
                         logger.warning(f"Email {email.id} is marked as sent to Brevo but was returned in the query")
