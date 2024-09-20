@@ -14,6 +14,7 @@ from functools import lru_cache, wraps
 from cachetools import TTLCache
 import asyncio
 import sentry_sdk
+from app.utils.content_formatter import format_content
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -159,7 +160,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         current_date = start_date if start_date else datetime.now(TIMEZONE) + buffer_time
         for i, email_data in enumerate(emails_data):
             try:
-                content = {section.name: email_data['content'].get(section.name, '') for section in email_structure}
+                content = {section.name: format_content(email_data['content'].get(section.name, '')) for section in email_structure}
                 email = EmailBase(
                     subject=email_data['subject'],
                     content=content,

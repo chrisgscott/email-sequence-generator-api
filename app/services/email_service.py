@@ -152,6 +152,14 @@ def send_email_background(db: Session, recipient_email: str, email: EmailContent
         logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
         # Here you might want to handle the error, maybe retry later or mark as failed in the database
 
+def format_content_as_html(content: Dict[str, str]) -> str:
+    html_content = "<html><body>"
+    for section_name, section_content in content.items():
+        html_content += f"<h2>{section_name}</h2>"
+        html_content += f"<div>{section_content}</div>"
+    html_content += "</body></html>"
+    return html_content
+
 def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent, inputs: dict, template_id: int):
     configuration = sib_api_v3_sdk.Configuration()
     configuration.api_key['api-key'] = settings.BREVO_API_KEY
@@ -160,9 +168,13 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     subject = email_content.subject
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
     to = [{"email": to_email}]
+    
+    # Format the email content as HTML
+    html_content = format_content_as_html(email_content.content)
+    
     params = {
         "subject": subject,
-        **email_content.content,
+        "html_content": html_content,
         **inputs
     }
     
