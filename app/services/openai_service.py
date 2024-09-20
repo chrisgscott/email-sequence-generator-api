@@ -116,7 +116,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                     {
                         "emails": [
                             {
-                                "subject": "Exciting Pet Training Tip for Your Labrador!",
+                                "subject": "Exciting Pet Training Tip for Your Lab!",
                                 "content": {
                                     "This weeks' training tip": "This week, we're focusing on teaching your Labrador to 'stay'. This command is crucial for your dog's safety and obedience.",
                                     "How you'll teach this": "Start with your dog in a sitting position. Hold your hand out, palm facing the dog, and say 'stay'. Take a step back. If your dog stays, immediately reward them with a treat and praise. Gradually increase the distance and duration.",
