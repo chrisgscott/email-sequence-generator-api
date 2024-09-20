@@ -41,7 +41,6 @@ async def process_submission_queue(queue: Queue):
             queue.task_done()
 
 async def process_submission(submission: SubmissionQueue):
-    logger.info(f"Starting process_submission for email: {submission.recipient_email}")
     db = SessionLocal()
     try:
         sequence_create = SequenceCreate(
@@ -122,5 +121,5 @@ async def process_submission(submission: SubmissionQueue):
         sentry_sdk.capture_exception(e)
         logger.error(f"Unexpected error processing submission for email {submission.recipient_email}: {str(e)}")
     finally:
-        logger.info(f"Closing database connection for email: {submission.recipient_email}")
         db.close()
+        logger.info(f"Closing database connection for email: {submission.recipient_email}")
