@@ -106,7 +106,7 @@ def get_tag_ids(api_key: APIKey, tag_names: list) -> list:
 #         # Spam-related words
 #         "limited time offer",
 #         # Potentially triggering words
-#         "trauma", "abuse", "trigger warning", "rape", "incest", "abuse", "abusive"
+#         "trauma", "abuse", "trigger warning", "rape", "incest", "abusive"
 #     ]
     
 #     content_lower = content.lower()

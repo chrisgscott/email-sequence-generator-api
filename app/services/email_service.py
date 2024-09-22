@@ -46,6 +46,7 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
 
         # Ensure email.content is properly accessed
         email_content = email.content if isinstance(email.content, dict) else email.content
+        formatted_content = format_email_content(email_content)
 
         # Log the email object and its content
         logger.info(f"Email object: {email}")
@@ -63,7 +64,7 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
             template_id=sequence.brevo_template_id,
             params={
                 "subject": subject,
-                **{k: v for k, v in email_content.items() if k != "subject"},
+                "body": formatted_content,
                 **sequence.inputs
             },
             headers={
@@ -262,3 +263,10 @@ def get_utc_offset(timezone_str: str) -> str:
     now = datetime.now(ZoneInfo(timezone_str))
     offset = now.strftime('%z')
     return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM
+
+def format_email_content(content: Dict[str, str]) -> str:
+    formatted_content = ""
+    for section, text in content.items():
+        formatted_content += f"<h2>{section.replace('_', ' ').title()}</h2>"
+        formatted_content += f"<p>{text}</p>"
+    return formatted_content
