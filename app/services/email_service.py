@@ -48,10 +48,6 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         email_content = email.content if isinstance(email.content, dict) else email.content
         formatted_content = format_email_content(email_content)
 
-        # Log the email object and its content
-        logger.info(f"Email object: {email}")
-        logger.info(f"Email content: {email_content}")
-
         # Ensure subject is properly set
         subject = email.subject if email.subject else email_content.get("subject", "No Subject")
         logger.info(f"Retrieved subject: {subject}")
@@ -64,21 +60,16 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
             template_id=sequence.brevo_template_id,
             params={
                 "subject": subject,
-                "body": formatted_content,
+                **formatted_content,
                 **sequence.inputs
-            },
-            headers={
-                "X-Mailin-custom": "custom_header_1:custom_value_1|custom_header_2:custom_value_2"
             },
             scheduled_at=scheduled_at
         )
         
         logger.info(f"Sending email with subject: {subject}")
-        
         logger.info(f"Making API call to Brevo with the following details:")
         logger.info(f"To: {send_smtp_email.to}")
         logger.info(f"Params: {send_smtp_email.params}")
-        logger.info(f"Headers: {send_smtp_email.headers}")
         
         api_response = api_instance.send_transac_email(send_smtp_email)
         
@@ -153,13 +144,8 @@ def send_email_background(db: Session, recipient_email: str, email: EmailContent
         logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
         # Here you might want to handle the error, maybe retry later or mark as failed in the database
 
-def format_content_as_html(content: Dict[str, str]) -> str:
-    html_content = "<html><body>"
-    for section_name, section_content in content.items():
-        html_content += f"<h2>{section_name}</h2>"
-        html_content += f"<div>{section_content}</div>"
-    html_content += "</body></html>"
-    return html_content
+def format_email_content(content: Dict[str, str]) -> Dict[str, str]:
+    return {section: text.strip() for section, text in content.items()}
 
 def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent, inputs: dict, template_id: int):
     configuration = sib_api_v3_sdk.Configuration()
@@ -171,11 +157,11 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     to = [{"email": to_email}]
     
     # Format the email content as HTML
-    html_content = format_content_as_html(email_content.content)
+    html_content = format_email_content(email_content.content)
     
     params = {
         "subject": subject,
-        "html_content": html_content,
+        **html_content,
         **inputs
     }
     
@@ -263,10 +249,3 @@ def get_utc_offset(timezone_str: str) -> str:
     now = datetime.now(ZoneInfo(timezone_str))
     offset = now.strftime('%z')
     return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM
-
-def format_email_content(content: Dict[str, str]) -> str:
-    formatted_content = ""
-    for section, text in content.items():
-        formatted_content += f"<h2>{section.replace('_', ' ').title()}</h2>"
-        formatted_content += f"<p>{text}</p>"
-    return formatted_content
