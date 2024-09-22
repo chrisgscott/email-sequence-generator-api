@@ -148,6 +148,7 @@ def format_email_for_blog_post(email: EmailBase) -> Dict[str, str]:
         # Remove any personal information or placeholders
         content = re.sub(r'\[NAME\]', 'Reader', section_content)
         content = re.sub(r'\[EMAIL\]', 'your email', content)
+        # Keep the Markdown formatting as is
         blog_post_content[section_name] = content.strip()
     
     return blog_post_content

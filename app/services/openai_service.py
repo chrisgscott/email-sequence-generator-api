@@ -119,11 +119,11 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                             {
                                 "subject": "Exciting Pet Training Tip for Your Lab!",
                                 "content": {
-                                    "This weeks' training tip": "This week, we're focusing on teaching your Labrador to 'stay'. This command is crucial for your dog's safety and obedience.",
-                                    "How you'll teach this": "Start with your dog in a sitting position. Hold your hand out, palm facing the dog, and say 'stay'. Take a step back. If your dog stays, immediately reward them with a treat and praise. Gradually increase the distance and duration.",
-                                    "Things to consider": "Remember, Labradors are energetic breeds. Ensure you've exercised your dog before training sessions to help them focus better.",
-                                    "If it's not going well": "If your Labrador is struggling with 'stay', try reducing distractions in the environment. Start in a quiet room before moving to more challenging locations.",
-                                    "CTA": "Share your 'stay' training progress with us! We'd love to hear how it's going."
+                                    "This weeks' training tip": "## This Week's Training Tip\n\nThis week, we're focusing on teaching your Labrador to 'stay'. This command is crucial for your dog's safety and obedience.",
+                                    "How you'll teach this": "### How to Teach 'Stay'\n\n1. Start with your dog in a sitting position.\n2. Hold your hand out, palm facing the dog, and say 'stay'.\n3. Take a step back.\n4. If your dog stays, immediately reward them with a treat and praise.\n5. Gradually increase the distance and duration.",
+                                    "Things to consider": "### Things to Consider\n\nRemember, Labradors are energetic breeds. Ensure you've exercised your dog before training sessions to help them focus better.",
+                                    "If it's not going well": "### Troubleshooting\n\nIf your Labrador is struggling with 'stay', try reducing distractions in the environment. Start in a quiet room before moving to more challenging locations.",
+                                    "CTA": "**Share your 'stay' training progress with us! We'd love to hear how it's going.**"
                                 },
                                 "category": "Pet Training",
                                 "tags": ["Labrador", "Training", "Behavior", "Obedience", "Safety"]

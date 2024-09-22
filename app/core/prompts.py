@@ -2,11 +2,13 @@
 EMAIL_PROMPT = """Generate content for emails {start_index} to {end_index} in an email sequence about {topic}.
 User inputs: {inputs}
 
-For each email in the sequence, provide the following sections:
+For each email in the sequence, provide the following sections in Markdown format:
 {sections_prompt}
 
 Also provide:
 {subject_prompt}
+
+Use proper Markdown syntax for formatting, including headers, lists, and emphasis. Do not use HTML tags.
 
 Return the result as a JSON array with {batch_size} items."""
 

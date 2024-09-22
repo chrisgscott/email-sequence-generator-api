@@ -46,7 +46,6 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
 
         # Ensure email.content is properly accessed
         email_content = email.content if isinstance(email.content, dict) else email.content
-        formatted_content = format_email_content(email_content)
 
         # Ensure subject is properly set
         subject = email.subject if email.subject else email_content.get("subject", "No Subject")
@@ -55,12 +54,15 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         if not subject or subject == "No Subject":
             logger.warning(f"Email {email.id} has no subject")
 
+        # Combine all content sections into a single Markdown string
+        markdown_content = "\n\n".join([f"## {section}\n\n{content}" for section, content in email_content.items()])
+
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
             template_id=sequence.brevo_template_id,
             params={
                 "subject": subject,
-                **formatted_content,
+                "content": markdown_content,
                 **sequence.inputs
             },
             scheduled_at=scheduled_at
@@ -144,9 +146,6 @@ def send_email_background(db: Session, recipient_email: str, email: EmailContent
         logger.error(f"Failed to send email to {recipient_email}: {str(e)}")
         # Here you might want to handle the error, maybe retry later or mark as failed in the database
 
-def format_email_content(content: Dict[str, str]) -> Dict[str, str]:
-    return {section: text.strip() for section, text in content.items()}
-
 def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent, inputs: dict, template_id: int):
     configuration = sib_api_v3_sdk.Configuration()
     configuration.api_key['api-key'] = settings.BREVO_API_KEY
@@ -156,12 +155,10 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
     to = [{"email": to_email}]
     
-    # Format the email content as HTML
-    html_content = format_email_content(email_content.content)
-    
+    # Pass each section individually
     params = {
         "subject": subject,
-        **html_content,
+        **{section: content for section, content in email_content.content.items()},
         **inputs
     }
     
