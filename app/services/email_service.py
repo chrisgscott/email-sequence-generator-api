@@ -50,7 +50,7 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         params = {
             "subject": subject,
             **{section: content for section, content in email.content.items()},
-            **sequence.inputs
+            **{f"input_{key}": value for key, value in sequence.inputs.items()}
         }
         logger.info(f"Params being sent to Brevo: {params}")
 
