@@ -142,6 +142,7 @@ async def generate_and_store_email_sequence(sequence_id: int, sequence: Sequence
         db.close()
 
 def format_email_for_blog_post(email: EmailBase) -> Dict[str, str]:
+    logger.info(f"Formatting email for blog post. Original content: {email.content}")
     blog_post_content = {}
     
     for section_name, section_content in email.content.items():
@@ -151,4 +152,5 @@ def format_email_for_blog_post(email: EmailBase) -> Dict[str, str]:
         # Keep the Markdown formatting as is
         blog_post_content[section_name] = content.strip()
     
+    logger.info(f"Formatted blog post content: {blog_post_content}")
     return blog_post_content

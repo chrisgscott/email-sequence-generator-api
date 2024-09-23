@@ -29,6 +29,7 @@ configuration.api_key['api-key'] = settings.BREVO_API_KEY
 def send_email(recipient_email: str, email: Email, sequence: Sequence):
     try:
         logger.info(f"Preparing to send email to {recipient_email}")
+        logger.info(f"Email content: {email.content}")
         
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
         
@@ -36,7 +37,6 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         
         local_scheduled_time = email.scheduled_for.replace(tzinfo=ZoneInfo('UTC')).astimezone(subscriber_timezone)
         
-        # If the scheduled time is in the past, set it to now + 5 minutes
         current_time = datetime.now(subscriber_timezone)
         if local_scheduled_time <= current_time:
             local_scheduled_time = current_time + timedelta(minutes=5)
@@ -44,33 +44,27 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         utc_offset = local_scheduled_time.strftime('%z')
         scheduled_at = local_scheduled_time.strftime(f'%Y-%m-%dT%H:%M:%S{utc_offset[:3]}:{utc_offset[3:]}')
 
-        # Ensure email.content is properly accessed
-        email_content = email.content if isinstance(email.content, dict) else email.content
-
-        # Ensure subject is properly set
-        subject = email.subject if email.subject else email_content.get("subject", "No Subject")
+        subject = email.subject if email.subject else "No Subject"
         logger.info(f"Retrieved subject: {subject}")
 
-        if not subject or subject == "No Subject":
-            logger.warning(f"Email {email.id} has no subject")
-
-        # Combine all content sections into a single Markdown string
-        markdown_content = "\n\n".join([f"## {section}\n\n{content}" for section, content in email_content.items()])
+        params = {
+            "subject": subject,
+            **{section: content for section, content in email.content.items()},
+            **sequence.inputs
+        }
+        logger.info(f"Params being sent to Brevo: {params}")
 
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
             template_id=sequence.brevo_template_id,
-            params={
-                "subject": subject,
-                "content": markdown_content,
-                **sequence.inputs
-            },
+            params=params,
             scheduled_at=scheduled_at
         )
         
         logger.info(f"Sending email with subject: {subject}")
         logger.info(f"Making API call to Brevo with the following details:")
         logger.info(f"To: {send_smtp_email.to}")
+        logger.info(f"Template ID: {sequence.brevo_template_id}")
         logger.info(f"Params: {send_smtp_email.params}")
         
         api_response = api_instance.send_transac_email(send_smtp_email)
@@ -155,10 +149,12 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
     to = [{"email": to_email}]
     
-    # Pass each section individually
+    # Combine all content sections into a single Markdown string
+    markdown_content = "\n\n".join([f"## {section}\n\n{content}" for section, content in email_content.content.items()])
+    
     params = {
         "subject": subject,
-        **{section: content for section, content in email_content.content.items()},
+        "content": markdown_content,
         **inputs
     }
     
