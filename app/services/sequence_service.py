@@ -77,7 +77,7 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
     logger.info(f"Adding {len(emails)} emails to sequence {sequence_id}")
     for email in emails:
         logger.info(f"Email data: subject={email.subject}, image_url={email.image_url}, photographer={email.photographer}, pexels_url={email.pexels_url}")
-    # ... rest of the function
+    
     sequence = db.query(Sequence).filter(Sequence.id == sequence_id).first()
     if not sequence:
         raise AppException(f"Sequence with id {sequence_id} not found", status_code=404)
@@ -89,7 +89,10 @@ def add_emails_to_sequence(db: Session, sequence_id: int, emails: List[EmailBase
             "content": email.content,
             "scheduled_for": email.scheduled_for,
             "category": email.category,
-            "tags": email.tags
+            "tags": email.tags,
+            "image_url": email.image_url,
+            "photographer": email.photographer,
+            "pexels_url": email.pexels_url
         }
         for email in emails
     ]
