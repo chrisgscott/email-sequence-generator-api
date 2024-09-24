@@ -16,6 +16,7 @@ import asyncio
 import sentry_sdk
 from app.utils.content_formatter import format_content
 from app.services.pexels_service import get_image_for_tags
+from app.models.email import EmailBase  # Ensure this import is correct
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -177,11 +178,11 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                     pexels_url=image_info['pexels_url'] if image_info else None,
                     scheduled_for=current_date + timedelta(days=i * days_between_emails)
                 )
+                logger.debug(f"Created EmailBase object: {email.dict()}")  # Add this debug log
                 processed_emails.append(email)
-            except KeyError as e:
-                logger.error(f"KeyError processing email {start_index + i + 1}: {str(e)}")
-                logger.error(f"Email data: {email_data}")
-                raise AppException(f"Missing required field in email data: {str(e)}", status_code=500)
+            except Exception as e:
+                logger.error(f"Error creating EmailBase object: {str(e)}")
+                raise
 
         logger.info(f"Generated and processed emails {start_index + 1} to {start_index + len(processed_emails)}")
         return processed_emails
