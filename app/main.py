@@ -24,9 +24,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.admin import admin
 from filelock import FileLock, Timeout
 
-# Load environment variables based on the ENVIRONMENT variable
-env_file = ".env.dev" if os.getenv("ENVIRONMENT") == "development" else ".env"
-load_dotenv(dotenv_path=env_file)
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

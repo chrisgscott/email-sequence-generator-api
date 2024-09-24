@@ -57,7 +57,17 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
             template_id=sequence.brevo_template_id,
-            params=params,
+            params={
+                "subject": subject,
+                "image_url": email.image_url,
+                "photographer": email.photographer,
+                "pexels_url": email.pexels_url,
+                **{k: v for k, v in email_content.items() if k != "subject"},
+                **sequence.inputs
+            },
+            headers={
+                "X-Mailin-custom": "custom_header_1:custom_value_1|custom_header_2:custom_value_2"
+            },
             scheduled_at=scheduled_at
         )
         

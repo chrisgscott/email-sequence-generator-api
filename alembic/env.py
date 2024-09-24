@@ -1,22 +1,30 @@
 from logging.config import fileConfig
-
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-
 from alembic import context
-
 from app.core.config import settings
-
+from dotenv import load_dotenv
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.db.database import Base
-from app.models import sequence, email  # adjust this import based on your project structure
-from app.models.user import User
-from app.models.api_key import APIKey
-from app.models.sequence import Sequence
-from app.models.email import Email
-# Import any other models you have
+from app.models import sequence, email, user, api_key
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("alembic")
+
+# Load environment variables
+env = os.environ['ENVIRONMENT']
+env_file = '.env' if env == 'prod' else '.env.dev'
+load_dotenv(env_file)
+
+logger.info(f"Current environment: {env}")
+logger.info(f"Loading environment from: {env_file}")
+
+# Ensure settings are reloaded after environment variables are set
+from app.core.config import Settings
+settings = Settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -29,6 +37,7 @@ if config.config_file_name is not None:
 
 # Overwrite the sqlalchemy.url in the alembic.ini file
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+logger.info(f"Using database URL: {settings.DATABASE_URL}")
 
 # add your model's MetaData object here
 # for 'autogenerate' support

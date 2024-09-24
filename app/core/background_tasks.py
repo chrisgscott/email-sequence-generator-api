@@ -100,7 +100,8 @@ async def process_submission(submission: SubmissionQueue):
                 "category": email.category,
                 "tags": email.tags,
                 "custom_post_type": submission.custom_post_type,
-                "custom_fields": {}
+                "custom_fields": {},
+                "featured_image_url": email.image_url
             }
             
             # Add each email section as a custom field
