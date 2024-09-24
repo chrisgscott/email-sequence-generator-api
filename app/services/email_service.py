@@ -49,7 +49,10 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
 
         params = {
             "subject": subject,
-            **{section: content for section, content in email.content.items()},
+            "image_url": email.image_url,
+            "photographer": email.photographer,
+            "pexels_url": email.pexels_url,
+            **email.content,  # This will add each section as a separate parameter
             **{f"input_{key}": value for key, value in sequence.inputs.items()}
         }
         logger.info(f"Params being sent to Brevo: {params}")
@@ -57,14 +60,7 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
             to=[{"email": recipient_email}],
             template_id=sequence.brevo_template_id,
-            params={
-                "subject": subject,
-                "image_url": email.image_url,
-                "photographer": email.photographer,
-                "pexels_url": email.pexels_url,
-                **{k: v for k, v in email_content.items() if k != "subject"},
-                **sequence.inputs
-            },
+            params=params,
             headers={
                 "X-Mailin-custom": "custom_header_1:custom_value_1|custom_header_2:custom_value_2"
             },
