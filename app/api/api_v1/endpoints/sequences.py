@@ -75,7 +75,7 @@ async def webhook(
         except ValueError:
             raise AppException("Invalid preferred_time format. Use HH:MM", status_code=400)
 
-        # Create SubmissionQueue object
+        # Create the SubmissionQueue object
         submission = SubmissionQueue(
             form_id=data["form_id"],
             topic=data["topic"],
