@@ -9,11 +9,22 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app.db.database import Base
 from app.models import sequence, email, user, api_key
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("alembic")
 
 # Load environment variables
-env = os.getenv('ENVIRONMENT', 'dev')
-load_dotenv(f'.env.{env}' if env != 'prod' else '.env')
+env = os.environ['ENVIRONMENT']
+env_file = '.env' if env == 'prod' else '.env.dev'
+load_dotenv(env_file)
 
+logger.info(f"Current environment: {env}")
+logger.info(f"Loading environment from: {env_file}")
+
+# Ensure settings are reloaded after environment variables are set
+from app.core.config import Settings
+settings = Settings()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -26,6 +37,7 @@ if config.config_file_name is not None:
 
 # Overwrite the sqlalchemy.url in the alembic.ini file
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+logger.info(f"Using database URL: {settings.DATABASE_URL}")
 
 # add your model's MetaData object here
 # for 'autogenerate' support

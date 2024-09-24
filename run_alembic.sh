@@ -8,6 +8,7 @@ fi
 
 # Set the environment variable
 export ENVIRONMENT=$1
+echo "Setting ENVIRONMENT to: $ENVIRONMENT"
 
 # Shift the first argument so we can pass the rest to alembic
 shift
@@ -33,4 +34,4 @@ else
 fi
 
 # Run Alembic with the provided arguments
-alembic "$@"
+PYTHONPATH=. alembic "$@"

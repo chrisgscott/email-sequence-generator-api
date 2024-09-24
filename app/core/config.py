@@ -1,9 +1,10 @@
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
-from typing import List, ClassVar, Optional
+from typing import List, ClassVar, Optional, Dict, Any
 from datetime import timezone
 from app.core.prompts import EMAIL_PROMPT, SECTIONS_PROMPT, SUBJECT_PROMPT
 import os
+from pydantic import validator
 
 # Load the .env file
 load_dotenv(override=True)
@@ -24,6 +25,12 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Email Sequence Generator API")
     PROJECT_VERSION: str = os.getenv("PROJECT_VERSION", "1.0.0")
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
+    
+    @validator("DATABASE_URL", pre=True)
+    def set_database_url(cls, v: Optional[str], values: Dict[str, Any]) -> str:
+        if values.get("ENVIRONMENT") == "dev":
+            return values.get("DEV_DATABASE_URL") or v
+        return v
 
     # API Keys and Authentication
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
@@ -93,6 +100,7 @@ Return the result as a JSON array with {batch_size} items.
 
     # Database Settings
     DATABASE_URL: str = os.getenv("DATABASE_URL")  # Connection string for the database
+    DEV_DATABASE_URL: Optional[str] = None
 
     # Sentry DSN
     SENTRY_DSN: str = os.getenv("SENTRY_DSN")
@@ -111,7 +119,7 @@ Return the result as a JSON array with {batch_size} items.
     PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY")
 
     class Config:
-        env_file = ".env"  # Specifies the file to load environment variables from
+        env_file = (".env", ".env.dev")  # Specifies the files to load environment variables from
 
 settings = Settings()
 
