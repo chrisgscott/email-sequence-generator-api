@@ -13,6 +13,9 @@ class EmailBase(BaseModel):
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     scheduled_for: Optional[datetime] = None
+    image_url: Optional[str] = None
+    photographer: Optional[str] = None
+    pexels_url: Optional[str] = None
 
 class Email(Base):
     __tablename__ = "emails"
