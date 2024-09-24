@@ -165,6 +165,7 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
                 
                 # Fetch image information
                 image_info = await get_image_for_tags(email_data['tags'])
+                logger.info(f"Fetched image info for email {start_index + i + 1}: {image_info}")
                 
                 email = EmailBase(
                     subject=email_data['subject'],
