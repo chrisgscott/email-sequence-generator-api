@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     """
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Email Sequence Generator API")
     PROJECT_VERSION: str = os.getenv("PROJECT_VERSION", "1.0.0")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "dev")
 
     # API Keys and Authentication
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
