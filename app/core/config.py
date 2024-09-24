@@ -21,15 +21,15 @@ class Settings(BaseSettings):
     Contains all the configuration settings for the Email Sequence Generator API.
     These settings can be overridden by environment variables.
     """
-    PROJECT_NAME: str = "Email Sequence Generator API"
-    PROJECT_VERSION: str = "1.0.0"
+    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Email Sequence Generator API")
+    PROJECT_VERSION: str = os.getenv("PROJECT_VERSION", "1.0.0")
 
     # API Keys and Authentication
-    OPENAI_API_KEY: str  # API key for OpenAI services
-    DATABASE_URL: str = os.getenv("DATABASE_URL")  # Connection string for the database
-    BREVO_API_KEY: str = os.getenv("BREVO_API_KEY")  # API key for Brevo email service
-    BREVO_EMAIL_TEMPLATE_ID: int = 1  # ID of the email template in Brevo
-    BREVO_PASSWORD_RESET_TEMPLATE_ID: int = 4  # Replace with your actual template ID for password reset emails
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY")
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
+    BREVO_API_KEY: str = os.getenv("BREVO_API_KEY")
+    BREVO_EMAIL_TEMPLATE_ID: int = int(os.getenv("BREVO_EMAIL_TEMPLATE_ID", "1"))
+    BREVO_PASSWORD_RESET_TEMPLATE_ID: int = int(os.getenv("BREVO_PASSWORD_RESET_TEMPLATE_ID", "4"))
 
     # OpenAI Model Configuration
     OPENAI_MODEL: str = "gpt-4o-mini"  # The OpenAI model to use for generating email content
