@@ -1,6 +1,6 @@
 import httpx
 from app.core.config import settings
-from app.core.logging import logger
+import logging
 from typing import Dict, Optional
 
 async def get_image_for_tags(tags: list[str]) -> Optional[Dict[str, str]]:
