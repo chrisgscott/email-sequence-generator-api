@@ -15,6 +15,7 @@ from cachetools import TTLCache
 import asyncio
 import sentry_sdk
 from app.utils.content_formatter import format_content
+from app.services.pexels_service import get_image_for_tags
 
 openai.api_key = settings.OPENAI_API_KEY
 
@@ -161,11 +162,18 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         for i, email_data in enumerate(emails_data):
             try:
                 content = {section.name: format_content(email_data['content'].get(section.name, '')) for section in email_structure}
+                
+                # Fetch image information
+                image_info = await get_image_for_tags(email_data['tags'])
+                
                 email = EmailBase(
                     subject=email_data['subject'],
                     content=content,
                     category=email_data['category'],
                     tags=email_data['tags'],
+                    image_url=image_info['image_url'] if image_info else None,
+                    photographer=image_info['photographer'] if image_info else None,
+                    pexels_url=image_info['pexels_url'] if image_info else None,
                     scheduled_for=current_date + timedelta(days=i * days_between_emails)
                 )
                 processed_emails.append(email)

@@ -27,5 +27,8 @@ class Email(Base):
     brevo_message_id = Column(String, nullable=True)
     category = Column(String)
     tags = Column(JSONB)
+    image_url = Column(String)
+    photographer = Column(String)
+    pexels_url = Column(String)
 
     sequence = relationship("Sequence", back_populates="emails")

@@ -63,6 +63,9 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
             template_id=sequence.brevo_template_id,
             params={
                 "subject": subject,
+                "image_url": email.image_url,
+                "photographer": email.photographer,
+                "pexels_url": email.pexels_url,
                 **{k: v for k, v in email_content.items() if k != "subject"},
                 **sequence.inputs
             },

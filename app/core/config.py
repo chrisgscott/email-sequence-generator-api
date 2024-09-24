@@ -106,6 +106,9 @@ Return the result as a JSON array with {batch_size} items.
     BREVO_PASSWORD_RESET_TEMPLATE_ID: int = 2  # Replace with your actual template ID for password reset emails
     PASSWORD_RESET_TOKEN_EXPIRE_HOURS: int = 24
 
+    # Pexels API Key
+    PEXELS_API_KEY: str = os.getenv("PEXELS_API_KEY")
+
     class Config:
         env_file = ".env"  # Specifies the file to load environment variables from
 
