@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 import logging
 from fastapi import FastAPI, Request, HTTPException, Depends, Security
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,6 +23,10 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from app.api.admin import admin
 from filelock import FileLock, Timeout
+
+# Load environment variables based on the ENVIRONMENT variable
+env_file = ".env.dev" if os.getenv("ENVIRONMENT") == "development" else ".env"
+load_dotenv(dotenv_path=env_file)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
