@@ -25,7 +25,8 @@ from app.api.admin import admin
 from filelock import FileLock, Timeout
 
 # Load environment variables
-load_dotenv()
+env = os.getenv('ENVIRONMENT', 'prod')
+load_dotenv(f'.env.{env}' if env != 'prod' else '.env')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

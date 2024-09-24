@@ -33,3 +33,4 @@ jinja2
 python-multipart
 itsdangerous
 requests
+httpx==0.24.1
