@@ -19,6 +19,7 @@ from filelock import FileLock, Timeout
 import sentry_sdk
 import time
 import psutil
+import markdown
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +48,15 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         subject = email.subject if email.subject else "No Subject"
         logger.info(f"Retrieved subject: {subject}")
 
+        # Convert Markdown to HTML
+        html_content = {key: markdown.markdown(value) for key, value in email.content.items()}
+
         params = {
             "subject": subject,
             "image_url": email.image_url,
             "photographer": email.photographer,
             "pexels_url": email.pexels_url,
-            **email.content,  # This will add each section as a separate parameter
+            **html_content,  # Use the HTML content instead of Markdown
             **{f"input_{key}": value for key, value in sequence.inputs.items()}
         }
         logger.info(f"Params being sent to Brevo: {params}")
