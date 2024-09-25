@@ -21,6 +21,7 @@ import time
 import psutil
 import markdown
 from markdown.extensions import extra, nl2br
+from app.utils.content_formatter import format_content
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +51,14 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         logger.info(f"Retrieved subject: {subject}")
 
         # Format and convert content to HTML
-        html_content = {key: convert_markdown_to_html(format_content(value)) for key, value in email.content.items()}
+        html_content = {key: convert_markdown_to_html(value) for key, value in email.content.items()}
 
         params = {
             "subject": subject,
             "image_url": email.image_url,
             "photographer": email.photographer,
             "pexels_url": email.pexels_url,
-            **html_content,  # Use the HTML content instead of Markdown
+            **html_content,
             **{f"input_{key}": value for key, value in sequence.inputs.items()}
         }
         logger.info(f"Params being sent to Brevo: {params}")
@@ -256,4 +257,4 @@ def get_utc_offset(timezone_str: str) -> str:
 
 def convert_markdown_to_html(content: str) -> str:
     md = markdown.Markdown(extensions=['extra', 'nl2br'])
-    return md.convert(content)
+    return md.convert(format_content(content))

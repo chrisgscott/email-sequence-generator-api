@@ -57,6 +57,13 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
 
         prompt += "\n\nFor each email, please include a 'category' field with a single category related to the email, and a 'tags' field with 3-5 tags related to the email. These will be used for blog post metadata."
 
+        prompt += """
+For lists, use the following Markdown syntax:
+- For unordered lists, use a hyphen followed by a space (- ) at the beginning of each list item.
+- For ordered lists, use a number followed by a period and a space (1. ) at the beginning of each list item.
+Ensure there's an empty line before and after each list.
+"""
+
         json_structure = {
             "type": "object",
             "properties": {
