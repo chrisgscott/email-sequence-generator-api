@@ -16,7 +16,7 @@ import asyncio
 import sentry_sdk
 from app.utils.content_formatter import format_content
 from app.services.pexels_service import get_image_for_tags
-from app.models.email import EmailBase  # Ensure this import is correct
+from app.models.email import EmailBase  
 
 openai.api_key = settings.OPENAI_API_KEY
 
