@@ -7,7 +7,7 @@ async def get_image_for_tags(tags: list[str], orientation: str = "landscape") ->
     url = "https://api.pexels.com/v1/search"
     headers = {"Authorization": settings.PEXELS_API_KEY}
     params = {
-        "query": " ".join(tags),
+        "query": tags[0] if tags else "",  # Use only the first tag
         "per_page": 1,
         "orientation": orientation
     }
@@ -20,10 +20,10 @@ async def get_image_for_tags(tags: list[str], orientation: str = "landscape") ->
     if data["photos"]:
         photo = data["photos"][0]
         return {
-            "image_url": photo["src"]["large"],  # Changed to "large" for better quality
+            "image_url": photo["src"]["large"],
             "photographer": photo["photographer"],
             "pexels_url": photo["url"]
         }
     else:
-        logger.warning(f"No {orientation} image found for tags: {tags}")
+        logger.warning(f"No {orientation} image found for tag: {tags[0] if tags else 'None'}")
         return None
