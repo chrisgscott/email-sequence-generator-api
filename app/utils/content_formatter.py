@@ -9,10 +9,10 @@ def format_content(content: str) -> str:
     for script in soup(["script", "style"]):
         script.decompose()
     
-    # Get the text content
-    text = soup.get_text()
+    # Remove extra whitespace within tags
+    for tag in soup.find_all(text=True):
+        if tag.parent.name not in ['script', 'style']:
+            tag.replace_with(re.sub(r'\s+', ' ', tag.strip()))
     
-    # Remove extra whitespace
-    text = re.sub(r'\s+', ' ', text).strip()
-    
-    return text
+    # Return the cleaned HTML as a string
+    return str(soup)

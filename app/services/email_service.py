@@ -19,7 +19,6 @@ from filelock import FileLock, Timeout
 import sentry_sdk
 import time
 import psutil
-import bleach
 from app.utils.content_formatter import format_content
 
 logger = logging.getLogger(__name__)
@@ -160,8 +159,9 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
     to = [{"email": to_email}]
     
-    # Combine all content sections into a single HTML string
+    # Combine all content sections into a single HTML string, preserving HTML tags
     html_content = "\n\n".join([f"<h2>{section}</h2>{content}" for section, content in email_content.content.items()])
+    logger.info(f"HTML content being sent to Brevo: {html_content}")
     
     params = {
         "subject": subject,
@@ -255,5 +255,4 @@ def get_utc_offset(timezone_str: str) -> str:
     return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM
 
 def process_html_content(content: str) -> str:
-    # Use the format_content function to clean the HTML
     return format_content(content)
