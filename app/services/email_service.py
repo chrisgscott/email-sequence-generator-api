@@ -20,6 +20,7 @@ import sentry_sdk
 import time
 import psutil
 import bleach
+from app.utils.content_formatter import format_content
 
 logger = logging.getLogger(__name__)
 
@@ -253,14 +254,6 @@ def get_utc_offset(timezone_str: str) -> str:
     offset = now.strftime('%z')
     return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM
 
-def sanitize_html(content: str) -> str:
-    # Use an HTML sanitizer library like bleach to clean the HTML
-    # This step ensures that only safe HTML tags are allowed
-    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'strong', 'em', 'br']
-    return bleach.clean(content, tags=allowed_tags, strip=True)
-
 def process_html_content(content: str) -> str:
-    # Sanitize the HTML content
-    sanitized_content = sanitize_html(content)
-    # Perform any additional processing if needed
-    return sanitized_content
+    # Use the format_content function to clean the HTML
+    return format_content(content)

@@ -35,3 +35,4 @@ itsdangerous
 requests
 httpx==0.24.1
 markdown
+beautifulsoup4==4.12.2
