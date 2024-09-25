@@ -20,6 +20,7 @@ import sentry_sdk
 import time
 import psutil
 import markdown
+from markdown.extensions import extra, nl2br
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +49,8 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         subject = email.subject if email.subject else "No Subject"
         logger.info(f"Retrieved subject: {subject}")
 
-        # Convert Markdown to HTML
-        html_content = {key: markdown.markdown(value) for key, value in email.content.items()}
+        # Format and convert content to HTML
+        html_content = {key: convert_markdown_to_html(format_content(value)) for key, value in email.content.items()}
 
         params = {
             "subject": subject,
@@ -252,3 +253,7 @@ def get_utc_offset(timezone_str: str) -> str:
     now = datetime.now(ZoneInfo(timezone_str))
     offset = now.strftime('%z')
     return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM
+
+def convert_markdown_to_html(content: str) -> str:
+    md = markdown.Markdown(extensions=['extra', 'nl2br'])
+    return md.convert(content)

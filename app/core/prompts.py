@@ -9,6 +9,10 @@ Also provide:
 {subject_prompt}
 
 Use proper Markdown syntax for formatting, including headers, lists, and emphasis. Do not use HTML tags.
+For lists, use the following Markdown syntax:
+- For unordered lists, use a hyphen followed by a space (- ) at the beginning of each list item.
+- For ordered lists, use a number followed by a period and a space (1. ) at the beginning of each list item.
+Ensure there's an empty line before and after each list.
 
 Return the result as a JSON array with {batch_size} items."""
 
