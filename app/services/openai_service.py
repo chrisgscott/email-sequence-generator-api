@@ -58,10 +58,10 @@ async def generate_email_sequence(topic: str, inputs: Dict[str, str], email_stru
         prompt += "\n\nFor each email, please include a 'category' field with a single category related to the email, and a 'tags' field with 3-5 tags related to the email. These will be used for blog post metadata."
 
         prompt += """
-For lists, use the following Markdown syntax:
-- For unordered lists, use a hyphen followed by a space (- ) at the beginning of each list item.
-- For ordered lists, use a number followed by a period and a space (1. ) at the beginning of each list item.
-Ensure there's an empty line before and after each list.
+For lists, use the following HTML syntax:
+- For unordered lists, use <ul> and wrap each list item in <li> tags.
+- For ordered lists, use <ol> and wrap each list item in <li> tags.
+Ensure there's proper spacing between elements using appropriate HTML structure.
 """
 
         json_structure = {
@@ -128,11 +128,11 @@ Ensure there's an empty line before and after each list.
                             {
                                 "subject": "Exciting Pet Training Tip for Your Lab!",
                                 "content": {
-                                    "This weeks' training tip": "## This Week's Training Tip\n\nThis week, we're focusing on teaching your Labrador to 'stay'. This command is crucial for your dog's safety and obedience.",
-                                    "How you'll teach this": "### How to Teach 'Stay'\n\n1. Start with your dog in a sitting position.\n2. Hold your hand out, palm facing the dog, and say 'stay'.\n3. Take a step back.\n4. If your dog stays, immediately reward them with a treat and praise.\n5. Gradually increase the distance and duration.",
-                                    "Things to consider": "### Things to Consider\n\nRemember, Labradors are energetic breeds. Ensure you've exercised your dog before training sessions to help them focus better.",
-                                    "If it's not going well": "### Troubleshooting\n\nIf your Labrador is struggling with 'stay', try reducing distractions in the environment. Start in a quiet room before moving to more challenging locations.",
-                                    "CTA": "**Share your 'stay' training progress with us! We'd love to hear how it's going.**"
+                                    "This weeks' training tip": "<h2>This Week's Training Tip</h2><p>This week, we're focusing on teaching your Labrador to 'stay'. This command is crucial for your dog's safety and obedience.</p>",
+                                    "How you'll teach this": "<h3>How to Teach 'Stay'</h3><ol><li>Start with your dog in a sitting position.</li><li>Hold your hand out, palm facing the dog, and say 'stay'.</li><li>Take a step back.</li><li>If your dog stays, immediately reward them with a treat and praise.</li><li>Gradually increase the distance and duration.</li></ol>",
+                                    "Things to consider": "<h3>Things to Consider</h3><p>Remember, Labradors are energetic breeds. Ensure you've exercised your dog before training sessions to help them focus better.</p>",
+                                    "If it's not going well": "<h3>Troubleshooting</h3><p>If your Labrador is struggling with 'stay', try reducing distractions in the environment. Start in a quiet room before moving to more challenging locations.</p>",
+                                    "CTA": "<p><strong>Share your 'stay' training progress with us! We'd love to hear how it's going.</strong></p>"
                                 },
                                 "category": "Pet Training",
                                 "tags": ["Labrador", "Training", "Behavior", "Obedience", "Safety"]
@@ -169,7 +169,7 @@ Ensure there's an empty line before and after each list.
         current_date = start_date if start_date else datetime.now(TIMEZONE) + buffer_time
         for i, email_data in enumerate(emails_data):
             try:
-                content = {section.name: format_content(email_data['content'].get(section.name, '')) for section in email_structure}
+                content = {section.name: email_data['content'].get(section.name, '') for section in email_structure}
                 
                 # Fetch image information
                 image_info = await get_image_for_tags(email_data['tags'], orientation="landscape")

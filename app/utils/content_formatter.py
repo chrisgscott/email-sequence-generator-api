@@ -1,16 +1,18 @@
 import re
+from bs4 import BeautifulSoup
 
 def format_content(content: str) -> str:
-    # Remove any HTML tags that might have been accidentally included
-    content = re.sub(r'<[^>]+>', '', content)
+    # Parse the HTML content
+    soup = BeautifulSoup(content, 'html.parser')
     
-    # Ensure proper line breaks for Markdown lists
-    content = re.sub(r'(\n[*\-+]|\n\d+\.)\s', r'\n\n\1 ', content)
+    # Remove any script or style tags
+    for script in soup(["script", "style"]):
+        script.decompose()
     
-    # Add line breaks between paragraphs
-    content = re.sub(r'(?<!\n)\n(?!\n)', '\n\n', content)
+    # Get the text content
+    text = soup.get_text()
     
-    # Remove any extra whitespace
-    content = re.sub(r'\s+', ' ', content).strip()
+    # Remove extra whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
     
-    return content
+    return text

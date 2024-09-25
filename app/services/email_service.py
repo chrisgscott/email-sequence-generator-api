@@ -19,9 +19,7 @@ from filelock import FileLock, Timeout
 import sentry_sdk
 import time
 import psutil
-import markdown
-from markdown.extensions import extra, nl2br
-from app.utils.content_formatter import format_content
+import bleach
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +48,8 @@ def send_email(recipient_email: str, email: Email, sequence: Sequence):
         subject = email.subject if email.subject else "No Subject"
         logger.info(f"Retrieved subject: {subject}")
 
-        # Format and convert content to HTML
-        html_content = {key: convert_markdown_to_html(value) for key, value in email.content.items()}
+        # Process HTML content
+        html_content = {key: process_html_content(value) for key, value in email.content.items()}
 
         params = {
             "subject": subject,
@@ -161,12 +159,12 @@ def send_email_to_brevo(db: Session, to_email: str, email_content: EmailContent,
     sender = {"name": settings.EMAIL_FROM_NAME, "email": settings.EMAIL_FROM}
     to = [{"email": to_email}]
     
-    # Combine all content sections into a single Markdown string
-    markdown_content = "\n\n".join([f"## {section}\n\n{content}" for section, content in email_content.content.items()])
+    # Combine all content sections into a single HTML string
+    html_content = "\n\n".join([f"<h2>{section}</h2>{content}" for section, content in email_content.content.items()])
     
     params = {
         "subject": subject,
-        "content": markdown_content,
+        "content": html_content,
         **inputs
     }
     
@@ -255,6 +253,14 @@ def get_utc_offset(timezone_str: str) -> str:
     offset = now.strftime('%z')
     return f"{offset[:3]}:{offset[3:]}"  # Format as ±HH:MM
 
-def convert_markdown_to_html(content: str) -> str:
-    md = markdown.Markdown(extensions=['extra', 'nl2br'])
-    return md.convert(format_content(content))
+def sanitize_html(content: str) -> str:
+    # Use an HTML sanitizer library like bleach to clean the HTML
+    # This step ensures that only safe HTML tags are allowed
+    allowed_tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'strong', 'em', 'br']
+    return bleach.clean(content, tags=allowed_tags, strip=True)
+
+def process_html_content(content: str) -> str:
+    # Sanitize the HTML content
+    sanitized_content = sanitize_html(content)
+    # Perform any additional processing if needed
+    return sanitized_content

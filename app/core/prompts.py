@@ -2,17 +2,17 @@
 EMAIL_PROMPT = """Generate content for emails {start_index} to {end_index} in an email sequence about {topic}.
 User inputs: {inputs}
 
-For each email in the sequence, provide the following sections in Markdown format:
+For each email in the sequence, provide the following sections in HTML format:
 {sections_prompt}
 
 Also provide:
 {subject_prompt}
 
-Use proper Markdown syntax for formatting, including headers, lists, and emphasis. Do not use HTML tags.
-For lists, use the following Markdown syntax:
-- For unordered lists, use a hyphen followed by a space (- ) at the beginning of each list item.
-- For ordered lists, use a number followed by a period and a space (1. ) at the beginning of each list item.
-Ensure there's an empty line before and after each list.
+Use proper HTML tags for formatting, including headers, lists, and emphasis. Ensure proper structure with <p>, <ul>, <ol>, <li>, <strong>, <em> tags as needed.
+For lists:
+- Use <ul> for unordered lists and <ol> for ordered lists.
+- Each list item should be wrapped in <li> tags.
+Ensure there's proper spacing between elements using appropriate HTML structure.
 
 Return the result as a JSON array with {batch_size} items."""
 
