@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
     # API and Processing Configuration
     BATCH_SIZE: int = 10  # Number of emails to generate in each batch
-    OPENAI_REQUEST_TIMEOUT: int = 180  # Timeout for OpenAI API requests in seconds
+    OPENAI_REQUEST_TIMEOUT: int = 240  # Timeout for OpenAI API requests in seconds
 
     # OpenAI Prompt Settings
     OPENAI_EMAIL_PROMPT: ClassVar[str] = """Generate {batch_size} unique emails for an email sequence about {topic}. Each email should be different and cover aspects of the topic according to the depth setting.
