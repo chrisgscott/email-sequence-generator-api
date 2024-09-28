@@ -48,6 +48,7 @@ Thumbs.db
 
 # Environment variables
 .env
+.env.dev
 .env.local
 .env.*.local
 alembic/env.py
@@ -73,4 +74,5 @@ coverage.xml
 # Other
 project_roadmap.md
 alembic.ini
+alembic_dev.ini
 send_payload.py
