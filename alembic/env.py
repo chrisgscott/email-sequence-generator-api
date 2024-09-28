@@ -22,7 +22,7 @@ load_dotenv(env_file)
 logger.info(f"Current environment: {env}")
 logger.info(f"Loading environment from: {env_file}")
 
-# Ensure settings are reloaded after environment variables are set
+# Ensure settings are reloaded after env variables are set
 from app.core.config import Settings
 settings = Settings()
 
